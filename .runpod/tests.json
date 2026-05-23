@@ -1,0 +1,147 @@
+{
+  "tests": [
+    {
+      "name": "basic_text_to_image",
+      "input": {
+        "prompt": "a photorealistic golden retriever puppy sitting on a meadow at sunset, cinematic lighting",
+        "width": 1024,
+        "height": 1024,
+        "num_inference_steps": 25,
+        "guidance_scale": 7.0,
+        "seed": 12345
+      },
+      "timeout": 240000
+    },
+    {
+      "name": "with_negative_prompt",
+      "input": {
+        "prompt": "a high-fashion editorial portrait of a woman in a futuristic outfit, studio lighting",
+        "negative_prompt": "blurry, low quality, deformed hands, extra fingers, text, watermark",
+        "num_inference_steps": 30,
+        "guidance_scale": 8.0,
+        "seed": 42
+      },
+      "timeout": 240000
+    },
+    {
+      "name": "batch_prompts",
+      "input": {
+        "prompts": [
+          "a watercolor painting of a foggy mountain at dawn",
+          "a vintage 1970s polaroid photograph of a cat on a windowsill",
+          "an isometric pixel art castle floating in the clouds"
+        ],
+        "num_inference_steps": 25,
+        "guidance_scale": 7.0,
+        "width": 1024,
+        "height": 1024,
+        "seed": 7
+      },
+      "timeout": 360000
+    },
+    {
+      "name": "custom_scheduler_euler_ancestral",
+      "input": {
+        "prompt": "an oil painting of a stormy sea, dramatic clouds, in the style of J.M.W. Turner",
+        "scheduler": "EulerAncestralDiscrete",
+        "num_inference_steps": 28,
+        "guidance_scale": 7.5,
+        "seed": 314
+      },
+      "timeout": 240000
+    },
+    {
+      "name": "sdxl_turbo_one_step",
+      "input": {
+        "model": "stabilityai/sdxl-turbo",
+        "prompt": "a tiny astronaut riding a tortoise on Mars, ultra-detailed digital art",
+        "scheduler": "EulerAncestralDiscrete",
+        "num_inference_steps": 1,
+        "guidance_scale": 0.0,
+        "width": 512,
+        "height": 512,
+        "seed": 999
+      },
+      "timeout": 180000
+    },
+    {
+      "name": "image_to_image",
+      "input": {
+        "task": "image_to_image",
+        "prompt": "transform this into a Studio Ghibli style anime illustration, soft pastels",
+        "init_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/600px-PNG_transparency_demonstration_1.png",
+        "strength": 0.65,
+        "num_inference_steps": 30,
+        "guidance_scale": 7.0,
+        "seed": 21
+      },
+      "timeout": 300000
+    },
+    {
+      "name": "inpainting",
+      "input": {
+        "task": "inpainting",
+        "prompt": "a bright red apple resting on a wooden table, photorealistic",
+        "init_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/PNG_transparency_demonstration_2.png/600px-PNG_transparency_demonstration_2.png",
+        "mask_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/600px-PNG_transparency_demonstration_1.png",
+        "num_inference_steps": 30,
+        "guidance_scale": 8.0,
+        "width": 1024,
+        "height": 1024,
+        "seed": 100
+      },
+      "timeout": 300000
+    },
+    {
+      "name": "with_lora",
+      "input": {
+        "prompt": "a portrait of a wizard in pixel art style, intricate details",
+        "lora_url": "nerijs/pixel-art-xl",
+        "lora_scale": 0.85,
+        "num_inference_steps": 30,
+        "guidance_scale": 7.0,
+        "seed": 555
+      },
+      "timeout": 360000
+    },
+    {
+      "name": "with_refiner",
+      "input": {
+        "prompt": "an architectural photograph of a futuristic glass skyscraper at golden hour, ultra-detailed",
+        "use_refiner": true,
+        "refiner_model": "stabilityai/stable-diffusion-xl-refiner-1.0",
+        "refiner_denoising_end": 0.8,
+        "refiner_denoising_start": 0.8,
+        "num_inference_steps": 30,
+        "refiner_num_inference_steps": 30,
+        "guidance_scale": 7.5,
+        "seed": 27
+      },
+      "timeout": 420000
+    }
+  ],
+  "config": {
+    "gpuTypeId": "NVIDIA GeForce RTX 4090",
+    "gpuCount": 1,
+    "env": [
+      {
+        "key": "SDXL_MODEL",
+        "value": "stabilityai/stable-diffusion-xl-base-1.0"
+      },
+      {
+        "key": "HF_HOME",
+        "value": "/root/.cache/huggingface"
+      }
+    ],
+    "allowedCudaVersions": [
+      "12.7",
+      "12.6",
+      "12.5",
+      "12.4",
+      "12.3",
+      "12.2",
+      "12.1",
+      "12.0"
+    ]
+  }
+}

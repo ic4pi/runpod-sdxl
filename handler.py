@@ -1,17 +1,17 @@
 """Runpod serverless handler for SDXL (Stable Diffusion XL).
 
 Supports three modes:
-  - text_to_image — pure prompt-driven generation, optional refiner pass
-  - image_to_image — img2img with init image and strength
-  - inpainting — masked inpainting with init image + mask image
+- text_to_image — pure prompt-driven generation, optional refiner pass
+- image_to_image — img2img with init image and strength
+- inpainting — masked inpainting with init image + mask image
 
 Backed by `diffusers` pipelines. Caches one pipeline per
 (model, mode, refiner, fp16) tuple so repeated calls reuse the same GPU
 memory. Accepts a single prompt or a batch of prompts; each prompt's
 result captures its own error so a bad prompt does not kill the batch.
-
 Returns a list of `{prompt, seed_used, images_b64: [...], scheduler, model}`.
 """
+
 from __future__ import annotations
 
 import base64
@@ -23,10 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
-try:
-    import runpod
-except Exception:
-    runpod = None
+import runpod
 
 try:
     import torch
@@ -69,8 +66,6 @@ except Exception as e:
     ) from e
 
 
-
-
 ALLOWED_MODELS = [
     "stabilityai/stable-diffusion-xl-base-1.0",
     "stabilityai/sdxl-turbo",
@@ -79,7 +74,6 @@ ALLOWED_MODELS = [
     "RunDiffusion/Juggernaut-XL-v9",
     "playgroundai/playground-v2-1024px-aesthetic",
 ]
-
 
 ALLOWED_SCHEDULERS = [
     "DPMSolverMultistep",
@@ -92,7 +86,6 @@ ALLOWED_SCHEDULERS = [
     "LCMScheduler",
 ]
 
-
 _SCHEDULER_CLASSES = {
     "DPMSolverMultistep": DPMSolverMultistepScheduler,
     "EulerDiscrete": EulerDiscreteScheduler,
@@ -104,12 +97,8 @@ _SCHEDULER_CLASSES = {
     "LCMScheduler": LCMScheduler,
 }
 
-
 ALLOWED_MODES = ["text_to_image", "image_to_image", "inpainting"]
-
-
 ALLOWED_FORMATS = {"png", "jpg", "jpeg", "webp"}
-
 
 DEFAULT_MODEL = os.getenv("SDXL_MODEL", "stabilityai/stable-diffusion-xl-base-1.0")
 
@@ -119,9 +108,6 @@ def _truthy(v: Optional[str]) -> bool:
 
 
 ALLOW_ANY_HF_MODEL = _truthy(os.getenv("SDXL_ALLOW_ANY_HF_MODEL", ""))
-
-
-
 
 _PIPE_CACHE: Dict[Tuple[str, str, Optional[str], bool], Any] = {}
 _LORA_LOADED_FOR: Dict[int, Tuple[str, float]] = {}
@@ -181,6 +167,7 @@ def get_pipeline(
 
     base = pipe_cls.from_pretrained(model, **load_kwargs)
     base = base.to(device)
+
     try:
         base.enable_vae_slicing()
     except Exception:
@@ -216,8 +203,6 @@ def get_pipeline(
     return bundle
 
 
-
-
 def apply_scheduler(pipe: Any, scheduler: Optional[str]) -> Optional[str]:
     """Replace the pipeline scheduler in-place. Returns the active scheduler name."""
     if not scheduler:
@@ -234,8 +219,6 @@ def apply_scheduler(pipe: Any, scheduler: Optional[str]) -> Optional[str]:
             f"failed to set scheduler {scheduler!r}: {e}"
         ) from e
     return scheduler
-
-
 
 
 def maybe_load_lora(
@@ -290,8 +273,6 @@ def maybe_load_lora(
 
     _LORA_LOADED_FOR[pid] = (lora_url, float(lora_scale))
     return lora_url
-
-
 
 
 _DATA_URI_RE = re.compile(r"^data:([^;,]+);base64,(.+)$", re.IGNORECASE | re.DOTALL)
@@ -355,8 +336,6 @@ def _resolve_mask(inp: Dict[str, Any]) -> Optional[Image.Image]:
         return im.convert("L")
 
 
-
-
 def encode_pil(img: Image.Image, fmt: str, jpeg_quality: int = 95) -> Tuple[bytes, str]:
     fmt = fmt.lower()
     if fmt == "jpeg":
@@ -380,8 +359,6 @@ def encode_pil(img: Image.Image, fmt: str, jpeg_quality: int = 95) -> Tuple[byte
 def encode_b64(img: Image.Image, fmt: str, jpeg_quality: int) -> str:
     data, _mime = encode_pil(img, fmt, jpeg_quality)
     return base64.b64encode(data).decode("ascii")
-
-
 
 
 def collect_prompts(inp: Dict[str, Any]) -> List[str]:
@@ -411,12 +388,11 @@ def collect_negative_prompts(inp: Dict[str, Any], n: int) -> List[Optional[str]]
             )
             out.append(v if (isinstance(v, str) and v.strip()) else None)
         return out
+
     np_str = inp.get("negative_prompt")
     if isinstance(np_str, str) and np_str.strip():
         return [np_str] * n
     return [None] * n
-
-
 
 
 def _make_generator(device: str, seed: Optional[int]) -> Tuple[Any, int]:
@@ -448,7 +424,6 @@ def _run_base(
     refiner_denoising_end: Optional[float],
 ) -> List[Image.Image]:
     pipe = bundle["base"]
-
     common: Dict[str, Any] = {
         "prompt": prompt,
         "num_inference_steps": int(num_inference_steps),
@@ -513,8 +488,6 @@ def _run_refiner(
     return list(refiner(**kwargs).images)
 
 
-
-
 def process_prompt(
     bundle: Dict[str, Any],
     prompt: str,
@@ -536,6 +509,7 @@ def process_prompt(
     guidance = float(cfg.get("guidance_scale", 7.0))
     n_per = int(cfg.get("num_images_per_prompt", 1))
     strength = cfg.get("strength")
+
     use_refiner = bool(cfg.get("use_refiner", False) and "refiner" in bundle)
     refiner_end = cfg.get("refiner_denoising_end", 0.8) if use_refiner else None
     refiner_start = cfg.get("refiner_denoising_start", 0.8) if use_refiner else None
@@ -592,8 +566,6 @@ def process_prompt(
         "guidance_scale": guidance,
         "output_format": out_format if out_format != "jpeg" else "jpg",
     }
-
-
 
 
 def handler(event: Dict[str, Any]) -> Dict[str, Any]:
@@ -670,12 +642,12 @@ def handler(event: Dict[str, Any]) -> Dict[str, Any]:
                         f"{task} requires 'init_image_url' or 'init_image_b64'."
                     )
                 }
-        if task == "inpainting":
-            mask_image = _resolve_mask(inp)
-            if mask_image is None:
-                return {
-                    "error": "inpainting requires 'mask_image_url' or 'mask_image_b64'."
-                }
+            if task == "inpainting":
+                mask_image = _resolve_mask(inp)
+                if mask_image is None:
+                    return {
+                        "error": "inpainting requires 'mask_image_url' or 'mask_image_b64'."
+                    }
     except Exception as e:
         return {"error": f"image input failed: {e}"}
 
@@ -744,10 +716,4 @@ def handler(event: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-if __name__ == "__main__":
-    if runpod is None:
-        raise RuntimeError(
-            "runpod is not installed; cannot start serverless worker."
-        )
-    runpod.serverless.start({"handler": handler})
-
+runpod.serverless.start({"handler": handler})

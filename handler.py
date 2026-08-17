@@ -23,10 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
-try:
-    import runpod
-except Exception:
-    runpod = None
+import runpod
 
 try:
     import torch
@@ -719,9 +716,4 @@ def handler(event: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-if __name__ == "__main__":
-    if runpod is None:
-        raise RuntimeError(
-            "runpod is not installed; cannot start serverless worker."
-        )
-    runpod.serverless.start({"handler": handler})
+runpod.serverless.start({"handler": handler})

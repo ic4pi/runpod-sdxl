@@ -716,4 +716,9 @@ def handler(event: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-runpod.serverless.start({"handler": handler})
+if __name__ == "__main__":
+    if runpod is None:
+        raise RuntimeError(
+            "runpod is not installed; cannot start serverless worker."
+        )
+    runpod.serverless.start({"handler": handler})

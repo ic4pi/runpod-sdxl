@@ -1,6 +1,6 @@
 runpod
 diffusers>=0.27.0
-transformers>=4.40.0
+transformers==4.44.2
 torch
 torchvision
 accelerate

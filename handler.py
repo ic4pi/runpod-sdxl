@@ -14,6 +14,9 @@ Returns a list of `{prompt, seed_used, images_b64: [...], scheduler, model}`.
 
 from __future__ import annotations
 
+import runpod
+assert hasattr(runpod.serverless, 'start'), "runpod.serverless.start missing"
+
 import base64
 import io
 import os
@@ -22,8 +25,6 @@ import re
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
-
-import runpod
 
 try:
     import torch

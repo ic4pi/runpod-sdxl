@@ -32,7 +32,7 @@ COPY requirements.txt /requirements.txt
 RUN uv pip install -r /requirements.txt
 
 # copy files
-COPY download_weights.py schemas.py handler.py test_input.json /
+COPY download_weights.py schemas.py handler.py /
 
 # download the weights from hugging face
 RUN python /download_weights.py

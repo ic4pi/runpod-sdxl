@@ -1,72 +1,22 @@
 {
-  "title": "Runpod SDXL (Text-to-Image · Img2Img · Inpaint)",
-  "description": "Serverless Stable Diffusion XL via diffusers. Supports text-to-image, image-to-image, and inpainting across SDXL Base, SDXL Turbo, SDXL Lightning, Juggernaut XL, and Playground V2; optional refiner pass, 8 schedulers, LoRA loading, batch prompts, negative prompts, seed control, and multi-image generation per prompt.",
+  "title": "SDXL (Stable Diffusion XL)",
+  "description": "Generate images with Stable Diffusion XL.",
   "type": "serverless",
   "category": "image",
-  "iconUrl": "https://example.com/icon.png",
+  "iconUrl": "https://dummyimage.com/100x100/7b00ff/fff&text=SDXL",
   "config": {
     "runsOn": "GPU",
-    "containerDiskInGb": 40,
-    "presets": [
-      {
-        "name": "SDXL Base 1.0",
-        "defaults": {
-          "SDXL_MODEL": "stabilityai/stable-diffusion-xl-base-1.0"
-        }
-      },
-      {
-        "name": "SDXL Turbo (1 step)",
-        "defaults": {
-          "SDXL_MODEL": "stabilityai/sdxl-turbo"
-        }
-      },
-      {
-        "name": "SDXL Lightning (4 step)",
-        "defaults": {
-          "SDXL_MODEL": "ByteDance/SDXL-Lightning"
-        }
-      },
-      {
-        "name": "Juggernaut XL v9",
-        "defaults": {
-          "SDXL_MODEL": "RunDiffusion/Juggernaut-XL-v9"
-        }
-      },
-      {
-        "name": "Playground V2 (1024px Aesthetic)",
-        "defaults": {
-          "SDXL_MODEL": "playgroundai/playground-v2-1024px-aesthetic"
-        }
-      }
-    ],
-    "env": [
-      {
-        "key": "SDXL_MODEL",
-        "input": {
-          "name": "Default model",
-          "type": "string",
-          "description": "Default HuggingFace model id used when 'model' is not given in the request. One of: stabilityai/stable-diffusion-xl-base-1.0, stabilityai/sdxl-turbo, ByteDance/SDXL-Lightning, stabilityai/stable-diffusion-xl-refiner-1.0, RunDiffusion/Juggernaut-XL-v9, playgroundai/playground-v2-1024px-aesthetic.",
-          "default": "stabilityai/stable-diffusion-xl-base-1.0"
-        }
-      },
-      {
-        "key": "HF_HOME",
-        "input": {
-          "name": "HuggingFace cache directory",
-          "type": "string",
-          "description": "Where downloaded weights are stored on the worker. Point at a persistent volume to avoid re-downloads.",
-          "default": "/root/.cache/huggingface"
-        }
-      },
-      {
-        "key": "SDXL_ALLOW_ANY_HF_MODEL",
-        "input": {
-          "name": "Allow any HuggingFace model id",
-          "type": "string",
-          "description": "Set to '1' to allow callers to specify any HuggingFace model id (otherwise restricted to the curated list).",
-          "default": "0"
-        }
-      }
+    "containerDiskInGb": 20,
+    "gpuIds": "ADA_24",
+    "gpuCount": 1,
+    "allowedCudaVersions": [
+      "12.7",
+      "12.6",
+      "12.5",
+      "12.4",
+      "12.3",
+      "12.2",
+      "12.1"
     ]
   }
 }

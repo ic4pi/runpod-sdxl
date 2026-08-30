@@ -21,7 +21,7 @@
     }
   ],
   "config": {
-    "gpuTypeId": "NVIDIA GeForce RTX 3090",
+    "gpuTypeId": "NVIDIA RTX A6000",
     "gpuCount": 1,
     "allowedCudaVersions": [
       "12.7",

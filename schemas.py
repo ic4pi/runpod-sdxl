@@ -33,11 +33,6 @@ INPUT_SCHEMA = {
         'required': False,
         'default': 25
     },
-    'refiner_inference_steps': {
-        'type': int,
-        'required': False,
-        'default': 50
-    },
     'guidance_scale': {
         'type': float,
         'required': False,
@@ -58,10 +53,5 @@ INPUT_SCHEMA = {
         'required': False,
         'default': 1,
         'constraints': lambda img_count: 3 > img_count > 0
-    },
-    'high_noise_frac': {
-        'type': float,
-        'required': False,
-        'default': None
     },
 }

@@ -1,7 +1,6 @@
 import torch
 from diffusers import (
     StableDiffusionXLPipeline,
-    StableDiffusionXLImg2ImgPipeline,
     AutoencoderKL,
 )
 
@@ -25,7 +24,8 @@ def fetch_pretrained_model(model_class, model_name, **kwargs):
 
 def get_diffusion_pipelines():
     """
-    Fetches the Stable Diffusion XL pipelines from the HuggingFace model hub.
+    Fetches the Stable Diffusion XL base pipeline from the HuggingFace model hub.
+    No refiner — base-only keeps the image smaller and cold starts faster.
     """
     common_args = {
         "torch_dtype": torch.float16,
@@ -41,13 +41,8 @@ def get_diffusion_pipelines():
     vae = fetch_pretrained_model(
         AutoencoderKL, "madebyollin/sdxl-vae-fp16-fix", **{"torch_dtype": torch.float16}
     )
-    refiner = fetch_pretrained_model(
-        StableDiffusionXLImg2ImgPipeline,
-        "stabilityai/stable-diffusion-xl-refiner-1.0",
-        **common_args,
-    )
 
-    return pipe, refiner, vae
+    return pipe, vae
 
 
 if __name__ == "__main__":

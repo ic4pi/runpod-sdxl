@@ -1,0 +1,17 @@
+# DECISIONS
+
+## Phase 1
+1. **Repo repurposed in place.** Existing SDXL/RunPod Python files (handler.py, Dockerfile, README, etc.) left untouched; not deleted without being asked. Next.js app added at repo root. Removed `lib/` and `lib64/` from `.gitignore` (Python patterns that would have ignored `/lib/dsp`).
+2. **Stack versions** pinned to latest at build time (Next 16.4.2, React 19.3.1, TS 7.0.2, Tailwind 4.3.3, Vitest 5.0.5). Zustand/IndexedDB/RNNoise not added yet (not needed in Phase 1). `noUncheckedIndexedAccess` left off (hot typed-array loops); `strict` is on.
+3. **Input type is planar `Pcm`**, not `AudioBuffer`, so the same code runs in a Worker, Node and tests. `pcmFromAudioBuffer` adapts. Worker client copies buffers before transfer so callers keep theirs.
+4. **Failure contract:** each measurement throws `MeasurementError(code)`. `measureAll` catches per measurement and returns `{ok:false,error}`, never a zero, and one failure doesn't hide the rest. Mono correlation throws `NOT_STEREO`. Digital silence throws. Values that are exactly 0 linear are clamped to -200 dB (`DB_FLOOR`) when converted to dB.
+5. **Loudness** is one file (integrated/short-term/LRA share the K-weighting pass). BS.1770-4 K-weighting derived per sample rate; channel weights all 1.0; needs >= 3 s. Short-term timeline at 100 ms hop. LRA per Tech 3342 (-70 abs, -20 LU rel, P95-P10).
+6. **True peak** uses a 12-tap/phase Kaiser(β=8) sinc 4x interpolator, NOT the exact BS.1770-4 Annex 2 coefficient table (not reproduced from memory). Validated with the fs/4@45° case (~0 dBTP); expect ±~0.1 dB vs a certified meter.
+7. **Third-octave:** base-10 centres 25 Hz–16 kHz, Welch FFT 16384 pts Hann 50% overlap, power-averaged; low bands (25–40 Hz) have only 2–3 bins, so they are coarse.
+8. **Two extra measurements** beyond the list, because the harness needs detectors for hum and plosives: `hum.ts` (low-percentile spectrum, harmonic prominence at 50/60 Hz ×4) and `plosive.ts` (20–80 Hz burst events). They are measurements first, detectors second (`detectors.ts`).
+9. **Clipping** = runs of ≥4 samples pinned at the file's own per-polarity maximum (tolerance 1e-4), so normalised-after-clip files are caught. A pure-tone peak could false-fire; real vocals unlikely. True-peak overs are reported but not in the verdict.
+10. **Hum detector** fires on ≥2 of 4 harmonics being prominent, so a lone tone (no harmonics) will not fire. Known gap; calibrate on real hum.
+11. **Plosive detector** needs LF level, LF share of energy, and burst-over-median-LF together, so steady hum/rumble doesn't count. Low male F0 (~90–110 Hz) is the known risk on real audio; the harness includes a 95 Hz control and passes, but synthetic only.
+12. **Noise print:** 2–5 s (spec said 2–3 s; allowance widened), must be stationary (block spread ≤10 dB) or it throws. SNR = power-subtracted speech over print RMS, speech = 100 ms blocks ≥10 dB above the print. DC removed before RMS.
+13. **Harness set:** 4 generated vocals × (clean + 4 defects × mild/moderate/severe). Noise print for synthetic = first 2.5 s room tone of the (injected) file; for an uploaded file = quietest 2.5 s. Severity levels were picked around the placeholder thresholds, so perfect scores validate mechanics, not threshold realism.
+14. **Dev route** 404s when `NODE_ENV=production` (verified). `agentRules: false` set so Next doesn't generate AGENTS.md.

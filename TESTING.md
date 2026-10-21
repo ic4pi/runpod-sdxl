@@ -43,3 +43,31 @@ Everything is seeded (mulberry32). Same code → same table. Typecheck: `npm run
 ## Caveat
 Perfect scores on synthetic audio prove detector mechanics only. Every threshold is a placeholder
 (`lib/dsp/measure/thresholds.ts`, `TODO: CALIBRATE`) and must be calibrated on real phone recordings.
+
+
+---
+
+# Phase 2 (repair chain, A/B, de-plosive confirm)
+
+## Unit tests (Node)
+```
+npm test
+```
+Phase 2 suites: `expander` (gate / word tails), `deess`, `deplosive` (incl. clipped input), `noisePrint`, `rnnoise`,
+`dynamics` (limiter, compressor), `config` (chain order + "no hardcoded numbers in stage files" lint), `native`
+(pure helpers, level matching, peaks, WAV), `fixtures` (runs on your own recordings; skipped when none).
+
+## Real-browser verification of the OfflineAudioContext stages and the UI
+```
+npm run e2e
+```
+Starts `next dev` itself, drives headless Chromium (`PW_EXE` or `/opt/pw-browsers`), and checks:
+each native stage in a real `OfflineAudioContext` (HPF/EQ/saturation/space numbers), resample+downmix leaves the source untouched,
+the full UI flow on a synthetic defective vocal (analysis -> pending pop confirmation -> render blocked -> confirm -> render ->
+per-stage bypass -> level-matched A/B playback). Screenshots land in `e2e-out/`.
+
+## Try it by hand
+```
+npm run dev      # http://localhost:3000/repair
+```
+Use a demo button, or drop your own recordings in `fixtures/audio/` (see its README) and click them under "Fixtures".

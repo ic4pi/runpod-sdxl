@@ -8,18 +8,21 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "harness": "tsx scripts/harness-cli.ts"
+    "harness": "tsx scripts/harness-cli.ts",
+    "e2e": "node scripts/e2e-chain.mjs"
   },
   "dependencies": {
     "next": "16.4.2",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "playwright-core": "^1.64.1",
     "postcss": "8.5.31",
     "tailwindcss": "4.3.3",
     "tsx": "4.23.15",

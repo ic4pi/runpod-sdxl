@@ -58,3 +58,12 @@ export function highpass(fc: number, q: number, sr: number): Biquad {
 /** Q values for a 4th-order Butterworth as two cascaded biquads. */
 export const BUTTERWORTH4_Q = [0.5411961, 1.3065630] as const;
 export const BUTTERWORTH2_Q = Math.SQRT1_2;
+
+/** Zero-phase filtering (forward, then backward): magnitude is |H|^2, phase is 0. Offline only. */
+export function applyBiquadZeroPhase(x: ArrayLike<number>, c: Biquad): Float64Array {
+  const fwd = applyBiquad(x, c);
+  fwd.reverse();
+  const back = applyBiquad(fwd, c);
+  back.reverse();
+  return back;
+}

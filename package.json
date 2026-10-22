@@ -12,12 +12,17 @@
     "e2e": "node scripts/e2e-chain.mjs",
     "e2e:coaching": "node scripts/e2e-coaching.mjs",
     "icons": "node scripts/make-icons.mjs",
-    "e2e:pwa": "node scripts/e2e-pwa.mjs"
+    "e2e:pwa": "node scripts/e2e-pwa.mjs",
+    "check:boundary": "node scripts/check-pro-boundary.mjs",
+    "prebuild": "node scripts/check-pro-boundary.mjs",
+    "e2e:pro": "node scripts/e2e-pro.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.1.0",
     "next": "16.4.2",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "zod": "4.6.7",
     "zustand": "^5.0.15"
   },
   "devDependencies": {

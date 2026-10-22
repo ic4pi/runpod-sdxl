@@ -7,13 +7,14 @@ import type { BypassMap } from "../dsp/configUtil";
  *   audio    : the source PCM, as raw Float32Array channels
  *   renders  : render attempts, so an interrupted one can be re-run from the saved state
  *   settings : small key/value app settings
+ *   responseCache : generic key -> JSON value cache with recency trimming (v2)
  *
  * AUDIO: an AudioBuffer is NOT structured-cloneable (structuredClone(audioBuffer) throws DataCloneError), so it can't be put in IDB.
  * We persist `{ sampleRate, channels: Float32Array[] }` (typed arrays ARE cloneable, byte-exact). The stored source is the chain's own
  * input (mono, 48 kHz, 32-bit float), so reopening reproduces the original render input bit for bit.
  */
 export const DB_NAME = "vocal-repair";
-export const DB_VERSION = 1;
+export const DB_VERSION = 2; // v2 adds the generic responseCache store
 export const SCHEMA_VERSION = 1;
 
 export interface StoredAudio {
@@ -163,6 +164,21 @@ export class Storage {
     return r === undefined ? fallback : (r.value as T);
   }
 
+  /** Generic JSON cache (recency-trimmed). Keys are caller-chosen hashes. */
+  async getCached<T>(key: string): Promise<T | undefined> {
+    const r = await req(this.db.transaction("responseCache").objectStore("responseCache").get(key));
+    return r === undefined ? undefined : (r.value as T);
+  }
+
+  async putCached(key: string, value: unknown, maxEntries: number): Promise<void> {
+    const tx = this.db.transaction("responseCache", "readwrite");
+    const store = tx.objectStore("responseCache");
+    store.put({ key, value, storedAt: Date.now() });
+    const all: { key: string; storedAt: number }[] = await req(store.getAll());
+    for (const old of all.sort((a, b) => b.storedAt - a.storedAt).slice(maxEntries)) store.delete(old.key);
+    await done(tx);
+  }
+
   /** Records that a render started. If the page dies before `finishRender`, the record stays "running". */
   async beginRender(sessionId: string, configFingerprint: string): Promise<RenderRecord> {
     const rec: RenderRecord = {
@@ -205,6 +221,7 @@ export async function openStorage(opts: { factory?: IDBFactory; name?: string; m
     if (!db.objectStoreNames.contains("audio")) db.createObjectStore("audio", { keyPath: "id" });
     if (!db.objectStoreNames.contains("settings")) db.createObjectStore("settings", { keyPath: "key" });
     if (!db.objectStoreNames.contains("renders")) db.createObjectStore("renders", { keyPath: "id" }).createIndex("sessionId", "sessionId");
+    if (!db.objectStoreNames.contains("responseCache")) db.createObjectStore("responseCache", { keyPath: "key" });
   };
   const db = await req(open);
   return new Storage(db, opts.maxSessions);

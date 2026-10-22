@@ -93,3 +93,9 @@ npm run e2e:pwa           # production build, headless Chromium: installability,
 ```
 `e2e:pwa` needs `npm run build` first. It starts `next start` itself. Output files land in `e2e-out/`. It also runs `scripts/measure-wav.ts` on each exported file.
 All audio is synthetic (generated); no real recording is used. The dev e2e scripts (`npm run e2e`, `npm run e2e:coaching`) still pass.
+
+## Phase 5: Pro phrasing
+- `npx vitest run tests/pro`: 63 tests. `validate` (hallucinated numbers, units, Unicode, words, ids, topics, URLs), `findings` (payload, schemas, every profile, prompt), `handler` (retry, rejection, fallback, cache hit, auth, rate limit, never-fail-closed), `client` (zero-fetch without key, cache, local re-validation, failure fallbacks), `freePath` (boundary checker, zero fetch on Free).
+- `npm run build && npm run e2e:pro`: real `next start` (edge route + real Anthropic SDK) against a **stub Anthropic server**, then a real browser on `/repair` asserting zero `/api/phrasing` requests. 10 checks.
+- Everything is synthetic or fake-model. No real API call has been made.
+- Env: `ANTHROPIC_API_KEY`, `PRO_TOKEN_HASHES` (SHA-256 hex of each issued key, comma-separated), optional `ANTHROPIC_BASE_URL`. Hash a key: `printf %s KEY | sha256sum`.

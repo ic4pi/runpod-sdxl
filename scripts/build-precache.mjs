@@ -13,6 +13,7 @@ const urls = ["/", "/repair", "/licenses"];
 // Next's hashed build output: everything the pages, their dynamic imports and web workers load
 for (const f of walk(".next/static").sort()) {
   if (f.endsWith(".map")) continue;
+  if (f.split(path.sep).join("/").includes("/chunks/app/api/")) continue; // server route bundles (e.g. the Pro edge route) are never client assets
   urls.push("/" + path.posix.join("_next", path.relative(".next", f).split(path.sep).join("/")));
 }
 

@@ -1,0 +1,17 @@
+{
+  "_doc": "Topic guard. For each coaching_id: regular expressions (case-insensitive) that signal the output is talking about THAT topic. If the output matches a topic whose coaching_id is NOT in the request AND the same expression does not match anything in the request text, the output is rejected (the model is raising a defect it was not given). Data, not code: add a rule's topic here.",
+  "topics": {
+    "presence_high": ["presence", "nasal"],
+    "presence_low": ["presence", "dull", "buried"],
+    "boxiness_high": ["box(y|iness)", "mud(dy)?"],
+    "sibilance_high": ["sibilan", "de-?ess", "\\bess(es)?\\b", "harsh"],
+    "plosive_detected": ["plosive", "\\bpops?\\b", "pop filter"],
+    "noise_floor_high": ["noise", "noisy", "hiss", "background"],
+    "clipping_present": ["clip", "distort"],
+    "lufs_over": ["lufs", "louder", "too loud"],
+    "lufs_under": ["lufs", "quieter", "too quiet", "too soft"],
+    "lra_wide": ["loudness range", "dynamic range", "level swing"],
+    "true_peak_hot": ["true peak", "headroom", "dbtp"],
+    "crest_low": ["over-?compress", "squash", "crest"]
+  }
+}

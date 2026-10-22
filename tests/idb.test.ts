@@ -194,3 +194,49 @@ describe("interrupted renders and settings", () => {
     await expect(openStorage({ factory: undefined, maxSessions: 1, name: "x" })).rejects.toThrow(/IndexedDB is not available/);
   });
 });
+
+describe("generic response cache (v2 store)", () => {
+  it("round-trips JSON across connections and trims to the newest N entries", async () => {
+    const factory = new IDBFactory();
+    const a = await open(factory);
+    expect(await a.getCached("k")).toBeUndefined();
+    for (let i = 0; i < 5; i++) {
+      await a.putCached(`k${i}`, { n: i, nested: { x: [1, 2, 3] } }, 3);
+      await new Promise((r) => setTimeout(r, 3)); // distinct storedAt
+    }
+    a.close();
+    const b = await open(factory);
+    expect(await b.getCached("k4")).toEqual({ n: 4, nested: { x: [1, 2, 3] } });
+    expect(await b.getCached("k2")).toBeDefined();
+    expect(await b.getCached("k1")).toBeUndefined(); // trimmed
+    expect(await b.getCached("k0")).toBeUndefined();
+  });
+
+  it("a database created at version 1 upgrades to 2 without losing sessions", async () => {
+    const factory = new IDBFactory();
+    // simulate the Phase 4 (v1) database
+    await new Promise<void>((resolve, reject) => {
+      const r = factory.open("t", 1);
+      r.onupgradeneeded = () => {
+        const db = r.result;
+        db.createObjectStore("sessions", { keyPath: "id" });
+        db.createObjectStore("audio", { keyPath: "id" });
+        db.createObjectStore("settings", { keyPath: "key" });
+        db.createObjectStore("renders", { keyPath: "id" }).createIndex("sessionId", "sessionId");
+      };
+      r.onsuccess = () => {
+        const tx = r.result.transaction("sessions", "readwrite");
+        tx.objectStore("sessions").put(session("old-v1"));
+        tx.oncomplete = () => {
+          r.result.close();
+          resolve();
+        };
+      };
+      r.onerror = () => reject(r.error);
+    });
+    const s = await open(factory);
+    expect((await s.getSession("old-v1"))!.id).toBe("old-v1");
+    await s.putCached("x", { ok: true }, 5);
+    expect(await s.getCached("x")).toEqual({ ok: true });
+  });
+});

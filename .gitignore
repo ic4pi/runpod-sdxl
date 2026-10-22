@@ -69,3 +69,4 @@ out/
 next-env.d.ts
 *.tsbuildinfo
 e2e-out/
+public/precache-manifest.js

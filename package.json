@@ -4,13 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack && node scripts/build-precache.mjs",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "harness": "tsx scripts/harness-cli.ts",
     "e2e": "node scripts/e2e-chain.mjs",
-    "e2e:coaching": "node scripts/e2e-coaching.mjs"
+    "e2e:coaching": "node scripts/e2e-coaching.mjs",
+    "icons": "node scripts/make-icons.mjs",
+    "e2e:pwa": "node scripts/e2e-pwa.mjs"
   },
   "dependencies": {
     "next": "16.4.2",
@@ -23,6 +25,8 @@
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "fake-indexeddb": "^6.2.6",
+    "lamejs": "^1.2.1",
     "playwright-core": "^1.64.1",
     "postcss": "8.5.31",
     "tailwindcss": "4.3.3",

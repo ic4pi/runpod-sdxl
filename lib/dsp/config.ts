@@ -79,9 +79,54 @@ export interface NoisePrintParams {
   };
 }
 
+export interface ExportConfig {
+  /** Integrated loudness the export is brought to (LUFS). */
+  targetLufs: number;
+  /** Accept an export whose measured loudness is within this of the target (LU). */
+  loudnessToleranceLu: number;
+  /** Gain/limiter passes tried to reach the target under the true-peak ceiling. */
+  maxIterations: number;
+  /** Floor for the measured loudness-per-dB-of-gain slope used to extrapolate (the limiter makes it < 1). */
+  minLoudnessSlope: number;
+  /** A candidate whose limiter pulls peaks down further than this is rejected: the ceiling and the sound win over the loudness target. */
+  maxLimiterReductionDb: number;
+  /** Integrated LUFS needs at least this much audio (BS.1770 3 s short-term window). Shorter clips get the limiter only. */
+  minSecondsForLoudness: number;
+  wav: { bitDepth: 16 | 32; dither: boolean; ditherSeed: number };
+  mp3: {
+    bitrateKbps: number;
+    /** The MP3 decoder can overshoot the PCM peak; the limiter ceiling is lowered by this for MP3 exports. */
+    ceilingMarginDb: number;
+    /** Samples handed to the encoder per call (one MPEG-1 Layer III frame). */
+    chunkSamples: number;
+    /** Where the unmodified LAME-derived encoder is served from (see public/licenses). */
+    workerUrl: string;
+  };
+  filename: {
+    separator: string;
+    /** Characters kept per field (Unicode code points). */
+    maxFieldChars: number;
+    /** Hard cap on the UTF-8 byte length of the base name. */
+    maxBytes: number;
+    emptyArtist: string;
+    emptyTrack: string;
+  };
+}
+
+export interface StorageConfig {
+  /** Saved sessions kept in IndexedDB; the oldest is evicted past this (each holds the full source PCM). */
+  maxSessions: number;
+  /** Autosave waits this long after the last change. */
+  autosaveDebounceMs: number;
+  /** Ask the browser to mark storage persistent so it is not evicted under pressure. */
+  requestPersistence: boolean;
+}
+
 export interface ChainConfig {
   /** Internal processing rate and channel count (mono). RNNoise requires 48 kHz. */
   internalSampleRate: number;
+  export: ExportConfig;
+  storage: StorageConfig;
   stages: {
     clippingCheck: StageConfig<{ detect: MeasureThresholds["clipping"] }>;
     noisePrint: StageConfig<NoisePrintParams>;
@@ -231,6 +276,18 @@ export interface ChainConfig {
 
 export const DEFAULT_CHAIN_CONFIG: ChainConfig = {
   internalSampleRate: 48000,
+  storage: { maxSessions: 5, autosaveDebounceMs: 800, requestPersistence: true },
+  export: {
+    targetLufs: -14,
+    loudnessToleranceLu: 0.5,
+    maxIterations: 8,
+    minLoudnessSlope: 0.2,
+    maxLimiterReductionDb: 6,
+    minSecondsForLoudness: 3,
+    wav: { bitDepth: 16, dither: true, ditherSeed: 1 },
+    mp3: { bitrateKbps: 192, ceilingMarginDb: 0.5, chunkSamples: 1152, workerUrl: "/workers/mp3-worker.js" },
+    filename: { separator: "_", maxFieldChars: 60, maxBytes: 200, emptyArtist: "artist", emptyTrack: "track" },
+  },
   stages: {
     clippingCheck: {
       label: "Clipping check",

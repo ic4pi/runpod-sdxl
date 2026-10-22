@@ -7,6 +7,10 @@ import { analyzeSource, renderChain, type ChainRenderResult } from "../dsp/chain
 import { confirmPlosives, type ChainAnalysis, type ConfirmedPlosives } from "../dsp/chain/types";
 import { DEFAULT_CHAIN_CONFIG, type ChainConfig, type StageId } from "../dsp/config";
 import { cloneConfig, setByPath, type BypassMap } from "../dsp/configUtil";
+import type { ExportFormat } from "../export/exporter";
+import { configForPreset, DEFAULT_PRESET_ID, type PresetId } from "../presets";
+import type { PopDecisionRecord, SessionRecord, StoredAudio } from "../storage/idb";
+import { renderHooks } from "./renderHooks";
 import { createMeasureClient, type MeasureClient } from "../dsp/measure/client";
 
 export type PopDecision = "none-needed" | "pending" | "confirmed" | "skipped";
@@ -14,6 +18,10 @@ export type PopDecision = "none-needed" | "pending" | "confirmed" | "skipped";
 interface ChainState {
   source: { name: string; buffer: AudioBuffer } | null;
   cfg: ChainConfig;
+  /** Which preset the config was resolved from. `cfg` may have been edited since (see presetIsModified in the UI). */
+  presetId: PresetId;
+  metadata: { artist: string; track: string };
+  exportFormat: ExportFormat;
   bypass: BypassMap;
   printStartSec: number | null;
   analysis: ChainAnalysis | null;
@@ -35,6 +43,12 @@ interface ChainState {
   skipPops(): void;
   render(): Promise<void>;
   resetConfig(): void;
+  /** Switch preset: resolve a complete config, keep the analysis (presets never change what analysis reads), re-render. */
+  switchPreset(id: PresetId): Promise<void>;
+  setMetadata(m: Partial<{ artist: string; track: string }>): void;
+  setExportFormat(f: ExportFormat): void;
+  /** Rebuild state from a saved session + its stored source PCM, re-analyze, re-apply the saved pop decision. */
+  restore(session: SessionRecord, audio: StoredAudio): Promise<void>;
 }
 
 let chainWorker: ChainWorkerClient | null = null;
@@ -53,7 +67,10 @@ const ANALYSIS_PATHS = new Set(["clippingCheck", "noisePrint"]);
 
 export const useChain = create<ChainState>()((set, get) => ({
   source: null,
-  cfg: cloneConfig(DEFAULT_CHAIN_CONFIG),
+  cfg: configForPreset(DEFAULT_PRESET_ID),
+  presetId: DEFAULT_PRESET_ID,
+  metadata: { artist: "", track: "" },
+  exportFormat: "wav",
   bypass: {},
   printStartSec: null,
   analysis: null,
@@ -129,6 +146,13 @@ export const useChain = create<ChainState>()((set, get) => ({
       return;
     }
     set({ busy: "Rendering", error: null });
+    let renderId: string | null = null;
+    try {
+      renderId = (await renderHooks.begin?.()) ?? null;
+    } catch {
+      /* persistence trouble must not stop the render */
+    }
+    const endHook = (ok: boolean, error?: string) => void renderHooks.end?.(renderId, ok, error)?.catch(() => undefined);
     try {
       const result = await renderChain(analysis, cfg, worker(), { bypass, confirmed });
       set({ result, busy: "Matching levels", match: null });
@@ -140,13 +164,55 @@ export const useChain = create<ChainState>()((set, get) => ({
         set({ match: { error: e instanceof Error ? e.message : String(e) } });
       }
       set({ busy: null });
+      endHook(true);
     } catch (e) {
       set({ busy: null, error: e instanceof Error ? e.message : String(e) });
+      endHook(false, e instanceof Error ? e.message : String(e));
     }
   },
 
   resetConfig() {
-    set({ cfg: cloneConfig(DEFAULT_CHAIN_CONFIG), bypass: {}, result: null, match: null });
+    set((s) => ({ cfg: configForPreset(s.presetId), bypass: {}, result: null, match: null }));
     if (get().source) void get().analyze();
+  },
+
+  async switchPreset(id) {
+    set({ presetId: id, cfg: configForPreset(id), result: null, match: null, error: null });
+    const { analysis, popDecision } = get();
+    if (analysis && popDecision !== "pending") await get().render();
+  },
+
+  setMetadata: (m) => set((s) => ({ metadata: { ...s.metadata, ...m } })),
+  setExportFormat: (f) => set({ exportFormat: f }),
+
+  async restore(session, audio) {
+    const ch = audio.channels[0];
+    if (!ch || audio.channels.length !== 1) throw new Error("Saved source is not mono; it was not saved by this app version.");
+    const buffer = new AudioBuffer({ length: audio.length, sampleRate: audio.sampleRate, numberOfChannels: 1 });
+    buffer.copyToChannel(ch as Float32Array<ArrayBuffer>, 0);
+    set({
+      source: { name: session.name, buffer },
+      cfg: session.config,
+      presetId: session.presetId as PresetId,
+      bypass: session.bypass,
+      printStartSec: session.printStartSec,
+      metadata: session.metadata,
+      exportFormat: session.exportFormat,
+      analysis: null,
+      original: null,
+      result: null,
+      match: null,
+      confirmed: null,
+      popDecision: "none-needed",
+      error: null,
+    });
+    await get().analyze();
+    const a = get().analysis;
+    if (!a) return;
+    const rec: PopDecisionRecord = session.pops.decision;
+    if (get().popDecision === "pending") {
+      if (rec === "confirmed") get().confirmPops(session.pops.confirmedIds.filter((id) => a.plosiveCandidates.some((c) => c.id === id)));
+      else if (rec === "skipped") get().skipPops();
+    }
   },
 }));

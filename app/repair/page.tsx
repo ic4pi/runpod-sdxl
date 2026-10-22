@@ -3,6 +3,10 @@
 import { useEffect } from "react";
 import { AbPlayerPanel } from "@/components/chain/AbPlayerPanel";
 import { CoachingSection } from "@/components/coaching/CoachingSection";
+import { ExportPanel } from "@/components/export/ExportPanel";
+import { PresetPicker } from "@/components/presets/PresetPicker";
+import { PwaStatus } from "@/components/pwa/PwaStatus";
+import { SessionBar } from "@/components/session/SessionBar";
 import { ChainPanel } from "@/components/chain/ChainPanel";
 import { SourceLoader } from "@/components/chain/SourceLoader";
 import { useChain } from "@/lib/state/chainStore";
@@ -22,9 +26,12 @@ export default function RepairPage() {
   return (
     <main className="mx-auto max-w-4xl space-y-4 p-4 text-sm">
       <h1 className="text-lg font-semibold">Repair vocal</h1>
+      <PwaStatus />
+      <SessionBar />
       <SourceLoader />
       {source && (
         <>
+          <PresetPicker />
           <div className="flex items-center gap-3">
             <button
               className="rounded bg-emerald-600 px-4 py-1.5 font-medium hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
@@ -43,6 +50,7 @@ export default function RepairPage() {
             </pre>
           )}
           <AbPlayerPanel />
+          <ExportPanel />
           <CoachingSection />
           <ChainPanel />
         </>

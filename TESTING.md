@@ -81,3 +81,15 @@ npm test                 # decision.test.ts, extract.test.ts, coachingUi.test.ts
 npm run e2e:coaching     # real Chromium: empty state, reference selection, placeholder banner, deltas, processed target
 ```
 Test inputs: `decision.test.ts` and `coachingUi.test.tsx` use SYNTHETIC METRIC VALUES only (derived from the invented placeholder profiles). `extract.test.ts` has two groups: hand-built synthetic report objects, and a group that runs the real Phase 1 functions on GENERATED synthetic audio (tones, noise, the synthetic vocal). The e2e uses the built-in synthetic demo vocal. No real recording is used anywhere.
+
+---
+
+# Phase 4 (presets, export, PWA, persistence)
+
+```
+npm test                  # + presets, master (LUFS/ceiling), exportFormats (WAV/MP3/filename), idb
+npm run build             # next build --webpack, then writes public/precache-manifest.js
+npm run e2e:pwa           # production build, headless Chromium: installability, offline, export, IndexedDB, recovery
+```
+`e2e:pwa` needs `npm run build` first. It starts `next start` itself. Output files land in `e2e-out/`. It also runs `scripts/measure-wav.ts` on each exported file.
+All audio is synthetic (generated); no real recording is used. The dev e2e scripts (`npm run e2e`, `npm run e2e:coaching`) still pass.

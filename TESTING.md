@@ -99,3 +99,10 @@ All audio is synthetic (generated); no real recording is used. The dev e2e scrip
 - `npm run build && npm run e2e:pro`: real `next start` (edge route + real Anthropic SDK) against a **stub Anthropic server**, then a real browser on `/repair` asserting zero `/api/phrasing` requests. 10 checks.
 - Everything is synthetic or fake-model. No real API call has been made.
 - Env: `ANTHROPIC_API_KEY`, `PRO_TOKEN_HASHES` (SHA-256 hex of each issued key, comma-separated), optional `ANTHROPIC_BASE_URL`. Hash a key: `printf %s KEY | sha256sum`.
+
+## Phase 6: hardening
+- `npx vitest run`: 346 tests. New: `tests/pro/adversarial.test.ts` (claim guards, canonical payload; each case also asserts what happens WITHOUT the guard), `ratelimit.test.ts` (shared store against a local stub of Upstash's REST API, memory fallback, "limited => zero model calls"), `auth.test.ts` (key list, rotation, runs `scripts/rotate-pro-key.mjs`), `smoke.test.ts` (runs `scripts/smoke-pro-model.mjs` against a stub Anthropic server for every failure mode), `tests/measureRealAudio.test.ts`.
+- `npm run build && npm run e2e:pro`: 16 checks, now with a labelled key list, the stub Upstash store, a forged-payload request, the rate limit through the real route, and a check that the build has no edge functions.
+- **Needs a real key (not run in CI, not run here):** `ANTHROPIC_API_KEY=... npm run smoke:pro`, then `npx tsx scripts/pro-cost.ts <promptTokens> <completionTokens>`.
+- **Needs real audio (not run here):** `npm run build && npm run measure:real -- /path/to/real-vocal.wav`. Run it on several files (loud, quiet, clipped, sibilant). Read the "TRUE-PEAK CEILING CHECK" block: a BREACH (exit 3) means `cfg.export.mp3.ceilingMarginDb` (0.5) is too small; the script says by how much.
+- Env for Pro: `ANTHROPIC_API_KEY`, `PRO_TOKEN_HASHES` (JSON list or comma-separated hashes; make one with `npm run rotate:pro-key`), optional `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`, optional `ANTHROPIC_BASE_URL`.

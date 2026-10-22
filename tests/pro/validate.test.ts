@@ -98,7 +98,7 @@ describe("HALLUCINATED NUMBERS ARE REJECTED", () => {
       expect(v.ok, bad).toBe(false);
       expect(kinds(v)).toContain("number-word");
     }
-    expect(validatePhrasing(p, withText(p, "explanation", "Keep it gentle, one step at a time.")).ok).toBe(true);
+    expect(validatePhrasing(p, withText(p, "explanation", "Small changes, one step at a time.")).ok).toBe(true);
   });
 
   it("digits inside words are still numbers (3k5, mp3)", () => {
@@ -163,7 +163,7 @@ describe("a second payload (presence + boxiness): frequency numbers from labels 
   );
   it("'250 Hz' and '3.5 kHz' come from the input; '300 Hz' does not", () => {
     expect(p.coaching_ids.sort()).toEqual(["boxiness_high", "presence_low"]);
-    expect(validatePhrasing(p, withText(p, "suggested_move", "Cut a little around 250 Hz and lift 3.5 kHz.")).ok).toBe(true);
-    expect(validatePhrasing(p, withText(p, "suggested_move", "Cut a little around 300 Hz.")).ok).toBe(false);
+    expect(validatePhrasing(p, withText(p, "explanation", "The region around 250 Hz and the one at 3.5 kHz.")).ok).toBe(true);
+    expect(validatePhrasing(p, withText(p, "explanation", "The region around 300 Hz.")).ok).toBe(false);
   });
 });

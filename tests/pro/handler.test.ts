@@ -1,60 +1,16 @@
 /** /api/phrasing handler: retries, rejection, cache, fallback, auth, rate limit. The LLM is a SCRIPTED FAKE (no network); metrics are SYNTHETIC. */
 import { describe, expect, it } from "vitest";
-import { sha256Hex } from "../../lib/pro/hash";
-import { handlePhrasing, type HandlerDeps } from "../../lib/pro/handler";
 import { tier1FallbackItems } from "../../lib/pro/findings";
-import type { LlmClient, LlmTurn } from "../../lib/pro/llm";
+import { handlePhrasing } from "../../lib/pro/handler";
+import type { LlmClient } from "../../lib/pro/llm";
 import { RateLimiter, TtlLru } from "../../lib/pro/limits";
 import { PRO_CONFIG } from "../../lib/pro/config";
-import type { PhrasedItem, PhrasingPayload, PhrasingResult } from "../../lib/pro/schema";
+import type { PhrasingPayload, PhrasingResult } from "../../lib/pro/schema";
 import { profileValueAtPct } from "../../lib/decision/evaluate";
+import { sha256Hex } from "../../lib/pro/hash";
+import { FakeLlm, hallucinated, KEY, NONCE, okText, setup } from "./handlerHarness";
 import { ABSENT, metricsTripping, payloadFrom, THREE_FINDINGS, trap } from "./helpers";
 
-const KEY = "pro-key-for-tests-123";
-const NONCE = "a".repeat(40);
-
-type Script = (string | Error | ((turns: LlmTurn[]) => string))[];
-class FakeLlm implements LlmClient {
-  calls: LlmTurn[][] = [];
-  constructor(private script: Script) {}
-  async complete({ messages }: { messages: LlmTurn[] }) {
-    this.calls.push(messages.map((m) => ({ ...m })));
-    const s = this.script[Math.min(this.calls.length - 1, this.script.length - 1)]!;
-    if (s instanceof Error) throw s;
-    const text = typeof s === "function" ? s(messages) : s;
-    return { text, usage: { inputTokens: 100, outputTokens: 50 } };
-  }
-}
-
-const okText = (p: PhrasingPayload, tweak?: (i: PhrasedItem[]) => PhrasedItem[]) => JSON.stringify({ items: (tweak ?? ((x) => x))(reworded(p)) });
-/** "Rewording" that only reuses the input's own numbers and words. */
-const reworded = (p: PhrasingPayload): PhrasedItem[] =>
-  tier1FallbackItems(p).map((i) => ({ ...i, headline: i.headline, explanation: `In plain words: ${i.explanation}` }));
-const hallucinated = (p: PhrasingPayload) => okText(p, (items) => items.map((i, n) => (n === 0 ? { ...i, suggested_move: `Cut ${ABSENT} dB.` } : i)));
-
-async function setup(llm: LlmClient | null, over: Partial<HandlerDeps> = {}) {
-  let t = 1_000_000;
-  const logs: Record<string, unknown>[] = [];
-  const deps: HandlerDeps = {
-    llm,
-    proTokenHashes: [await sha256Hex(KEY)],
-    cache: new TtlLru<PhrasingResult>(50, 60_000),
-    limiter: new RateLimiter(60_000),
-    now: () => (t += 5),
-    log: (e) => logs.push(e),
-    ...over,
-  };
-  const call = (payload: PhrasingPayload, headers: Record<string, string> = {}, body?: string) =>
-    handlePhrasing(
-      new Request("http://x/api/phrasing", {
-        method: "POST",
-        headers: { authorization: `Bearer ${KEY}`, "x-install-nonce": NONCE, "content-type": "application/json", ...headers },
-        body: body ?? JSON.stringify({ payload }),
-      }),
-      deps,
-    );
-  return { deps, call, logs };
-}
 const bodyOf = async (r: Response) => (await r.json()) as PhrasingResult & { error?: string };
 
 describe("happy path and the numeric rejection loop", () => {
@@ -208,7 +164,7 @@ describe("access control, validation, limits", () => {
     const { call } = await setup(llm);
     expect((await call(p, { authorization: "" })).status).toBe(401);
     expect((await call(p, { authorization: "Bearer wrong-key-123456" })).status).toBe(401);
-    expect((await (await setup(llm, { proTokenHashes: [] })).call(p)).status).toBe(503);
+    expect((await (await setup(llm, { proKeys: [] })).call(p)).status).toBe(503);
     expect(llm.calls.length).toBe(0); // never reaches the model
   });
   it("bad install nonce -> 400; bad JSON / schema / unknown fields -> 400; GET -> 405; oversized -> 413", async () => {

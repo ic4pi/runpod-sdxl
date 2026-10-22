@@ -1,9 +1,10 @@
-import { verifyProToken } from "./auth";
+import { verifyProToken, type ProKey } from "./auth";
+import { canonicalViolations } from "./canonical";
 import { PRO_CONFIG } from "./config";
 import { tier1FallbackItems } from "./findings";
 import { canonicalJson, sha256Hex } from "./hash";
 import type { LlmClient, LlmTurn } from "./llm";
-import { RateLimiter, TtlLru } from "./limits";
+import type { RateLimit, TtlLru } from "./limits";
 import { buildRetryMessage, buildUserMessage, SYSTEM_PROMPT } from "./prompt";
 import { PhrasingRequestSchema, type PhrasingPayload, type PhrasingResult } from "./schema";
 import { validatePhrasing, type Violation } from "./validate";
@@ -11,9 +12,9 @@ import { validatePhrasing, type Violation } from "./validate";
 export interface HandlerDeps {
   /** null when ANTHROPIC_API_KEY is not configured. */
   llm: LlmClient | null;
-  proTokenHashes: readonly string[];
+  proKeys: readonly ProKey[];
   cache: TtlLru<PhrasingResult>;
-  limiter: RateLimiter;
+  limiter: RateLimit;
   now: () => number;
   log: (entry: Record<string, unknown>) => void;
 }
@@ -22,7 +23,10 @@ const json = (body: unknown, status = 200, headers: Record<string, string> = {})
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": "no-store", ...headers } });
 
 const NONCE = new RegExp(`^[A-Za-z0-9_-]{${PRO_CONFIG.rateLimit.nonceMinChars},${PRO_CONFIG.rateLimit.nonceMaxChars}}$`);
-const clientIp = (req: Request) => req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+/** On Vercel the platform sets these from the real connection (a client cannot spoof them). Behind any other proxy that does not strip them, the per-IP limit is only as good as that proxy. */
+const clientIp = (req: Request) => req.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+/** Raw nonces and IPs are never sent to the store: only a truncated hash. */
+const bucket = async (kind: string, v: string) => `${kind}:${(await sha256Hex(v)).slice(0, 32)}`;
 const shortReason = (vs: readonly Violation[]) => vs.map((v) => `${v.kind}: ${v.detail}`).join("; ").slice(0, 280);
 
 /**
@@ -38,9 +42,10 @@ export async function handlePhrasing(req: Request, deps: HandlerDeps): Promise<R
   const bodyText = await req.text();
   if (bodyText.length > PRO_CONFIG.limits.maxRequestBytes) return json({ error: "too-large" }, 413);
 
-  const auth = await verifyProToken(req.headers.get("authorization"), deps.proTokenHashes);
-  if (auth === "not-configured") return json({ error: "pro-not-configured" }, 503);
-  if (auth !== "ok") return json({ error: auth === "missing" ? "pro-key-required" : "pro-key-invalid" }, 401);
+  const auth = await verifyProToken(req.headers.get("authorization"), deps.proKeys);
+  if (auth.status === "not-configured") return json({ error: "pro-not-configured" }, 503);
+  if (auth.status !== "ok") return json({ error: auth.status === "missing" ? "pro-key-required" : "pro-key-invalid" }, 401);
+  const keyLabel = auth.key.label;
 
   const nonce = req.headers.get("x-install-nonce") ?? "";
   if (!NONCE.test(nonce)) return json({ error: "bad-install-nonce" }, 400);
@@ -53,6 +58,8 @@ export async function handlePhrasing(req: Request, deps: HandlerDeps): Promise<R
   } catch {
     return json({ error: "invalid-json" }, 400);
   }
+  const forged = canonicalViolations(payload);
+  if (forged.length) return json({ error: "non-canonical-payload", issues: forged.slice(0, 5) }, 400);
 
   const base = { prompt_version: PRO_CONFIG.promptVersion, model: PRO_CONFIG.model };
   const fallback = (reason: string, attempts: number, rejections: string[] = []): Response => {
@@ -69,11 +76,15 @@ export async function handlePhrasing(req: Request, deps: HandlerDeps): Promise<R
       return json({ ...hit, source: "cache", attempts: 0, rejections: undefined, fallback_reason: undefined });
     }
 
-    // cache misses that will cost money are rate limited (per install and per IP); hits above are free
+    // Cache misses are the only requests that can cost money. They are rate limited BEFORE any model call: per install, per IP, per key.
+    // A request that is limited returns here and never reaches the model. Cache hits above are free.
     const rl = PRO_CONFIG.rateLimit;
-    for (const [k, limit] of [[`nonce:${nonce}`, rl.perInstall], [`ip:${clientIp(req)}`, rl.perIp]] as const) {
-      const r = deps.limiter.take(k, limit, deps.now());
-      if (!r.ok) return json({ error: "rate-limited" }, 429, { "retry-after": String(r.retryAfterSec) });
+    for (const [k, limit] of [[await bucket("nonce", nonce), rl.perInstall], [await bucket("ip", clientIp(req)), rl.perIp], [await bucket("key", auth.key.hash), rl.perKey]] as const) {
+      const r = await deps.limiter.take(k, limit, deps.now());
+      if (!r.ok) {
+        deps.log({ event: "phrasing-rate-limited", scope: k.split(":")[0], key: keyLabel, retryAfterSec: r.retryAfterSec });
+        return json({ error: "rate-limited" }, 429, { "retry-after": String(r.retryAfterSec) });
+      }
     }
 
     if (!deps.llm) return fallback("llm-unconfigured", 0);
@@ -119,7 +130,7 @@ export async function handlePhrasing(req: Request, deps: HandlerDeps): Promise<R
       if (verdict.ok) {
         const result: PhrasingResult = { source: "llm", items: verdict.items, attempts, ...(rejections.length ? { rejections } : {}), ...base };
         deps.cache.set(key, result, deps.now()); // only validated model output is ever cached
-        deps.log({ event: "phrasing", source: "llm", attempts, hash: key.slice(0, 12), in: usageIn, out: usageOut, ms: deps.now() - t0 });
+        deps.log({ event: "phrasing", source: "llm", key: keyLabel, attempts, hash: key.slice(0, 12), in: usageIn, out: usageOut, ms: deps.now() - t0 });
         return json(result);
       }
       rejections.push(shortReason(verdict.violations));

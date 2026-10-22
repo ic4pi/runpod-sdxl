@@ -70,3 +70,6 @@ next-env.d.ts
 *.tsbuildinfo
 e2e-out/
 public/precache-manifest.js
+
+# real-audio measurement output (never commit audio)
+measure-out/

@@ -1,4 +1,4 @@
-/** In-memory TTL+LRU cache and fixed-window rate limiter. Per edge isolate: best-effort (see DECISIONS.md for what a shared store would add). */
+/** In-memory TTL+LRU cache and fixed-window rate limiter. Per server instance: best-effort. The shared-store limiter is in ratestore.ts. */
 export class TtlLru<V> {
   private map = new Map<string, { v: V; exp: number }>();
   constructor(
@@ -26,11 +26,18 @@ export class TtlLru<V> {
   }
 }
 
-export class RateLimiter {
+export type RateResult = { ok: true } | { ok: false; retryAfterSec: number };
+/** A limiter may be synchronous (in memory) or asynchronous (shared store). */
+export interface RateLimit {
+  /** Consumes one unit of `key`'s budget. Returns `{ok:false, retryAfterSec}` when the key is over `limit` in the current window. */
+  take(key: string, limit: number, now: number): RateResult | Promise<RateResult>;
+}
+
+export class RateLimiter implements RateLimit {
   private hits = new Map<string, { count: number; resetAt: number }>();
   constructor(private windowMs: number) {}
   /** Consumes one unit. Returns `{ok:false, retryAfterSec}` when the key is over its limit. */
-  take(key: string, limit: number, now: number): { ok: true } | { ok: false; retryAfterSec: number } {
+  take(key: string, limit: number, now: number): RateResult {
     if (this.hits.size > 10_000) for (const [k, v] of this.hits) if (v.resetAt <= now) this.hits.delete(k);
     const cur = this.hits.get(key);
     if (!cur || cur.resetAt <= now) {

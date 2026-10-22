@@ -15,7 +15,11 @@
     "e2e:pwa": "node scripts/e2e-pwa.mjs",
     "check:boundary": "node scripts/check-pro-boundary.mjs",
     "prebuild": "node scripts/check-pro-boundary.mjs",
-    "e2e:pro": "node scripts/e2e-pro.mjs"
+    "e2e:pro": "tsx scripts/e2e-pro.mjs",
+    "smoke:pro": "tsx scripts/smoke-pro-model.mjs",
+    "cost:pro": "tsx scripts/pro-cost.ts",
+    "rotate:pro-key": "tsx scripts/rotate-pro-key.mjs",
+    "measure:real": "tsx scripts/measure-real-audio.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.1.0",

@@ -1,24 +1,38 @@
-import { parseHashList } from "@/lib/pro/auth";
+import { parseProKeys } from "@/lib/pro/auth";
 import { PRO_CONFIG } from "@/lib/pro/config";
 import { handlePhrasing, type HandlerDeps } from "@/lib/pro/handler";
-import { RateLimiter, TtlLru } from "@/lib/pro/limits";
+import { TtlLru } from "@/lib/pro/limits";
 import { createAnthropicLlm } from "@/lib/pro/llm";
+import { createRateLimiter } from "@/lib/pro/ratestore";
 import type { PhrasingResult } from "@/lib/pro/schema";
 
-/** Pro-only. Vercel Edge function. The Free tier never calls this route (see scripts/check-pro-boundary.mjs). */
-export const runtime = "edge";
+/**
+ * Pro-only. The Free tier never calls this route (see scripts/check-pro-boundary.mjs).
+ * Runtime: Node.js, which is the Next 16 default. There is deliberately NO `runtime` export: the edge runtime is deprecated, and Next's
+ * docs for 16.4 say to remove the export (node_modules/next/dist/docs/.../route-segment-config/runtime.md).
+ * maxDuration covers PRO_CONFIG.totalDeadlineMs (22 s) plus overhead.
+ */
+export const maxDuration = 30;
 
-// module scope = one per edge isolate (best-effort cache and rate limit)
+// Module scope = one per server instance. The response cache is per instance (best-effort); the rate limit is shared when Upstash is configured.
 const cache = new TtlLru<PhrasingResult>(PRO_CONFIG.cache.serverMaxEntries, PRO_CONFIG.cache.serverTtlMs);
-const limiter = new RateLimiter(PRO_CONFIG.rateLimit.windowMs);
+let rate: ReturnType<typeof createRateLimiter> | null = null;
+const getRate = () =>
+  (rate ??= (() => {
+    const r = createRateLimiter(process.env, { onError: (e) => console.error(JSON.stringify({ event: "rate-store-error", error: e instanceof Error ? e.message : String(e) })) });
+    console.log(JSON.stringify({ event: "phrasing-config", rateLimitStore: r.kind }));
+    return r;
+  })());
 
 function deps(): HandlerDeps {
   const apiKey = process.env.ANTHROPIC_API_KEY;
+  const { keys, errors } = parseProKeys(process.env.PRO_TOKEN_HASHES);
+  if (errors.length) console.error(JSON.stringify({ event: "pro-keys-config-error", errors }));
   return {
     llm: apiKey ? createAnthropicLlm({ apiKey, baseURL: process.env.ANTHROPIC_BASE_URL || undefined }) : null,
-    proTokenHashes: parseHashList(process.env.PRO_TOKEN_HASHES),
+    proKeys: keys,
     cache,
-    limiter,
+    limiter: getRate().limiter,
     now: () => Date.now(),
     log: (entry) => console.log(JSON.stringify(entry)),
   };

@@ -1,0 +1,43 @@
+{
+  "_doc": "Closed vocabularies for the claim guards in pinning.ts (data, not code). A word matching any pattern below may appear in the model's headline/explanation ONLY IF it also appears in Tier 1's own text for that same finding (title, message, suggested_move, metric label). Patterns are regex sources, matched case-insensitively with word boundaries. Extend a list to widen the guard; a rewording the guard wrongly rejects is retried and, worst case, falls back to Tier 1 text.",
+  "imperatives": [
+    "boost(s|ed|ing)?", "cut(s|ting)?", "pull(s|ed|ing)?", "reduc(e|es|ed|ing)", "rais(e|es|ed|ing)", "lower(s|ed|ing)?", "add(s|ed|ing)?",
+    "remov(e|es|ed|ing)", "appl(y|ies|ied|ying)", "increas(e|es|ed|ing)", "decreas(e|es|ed|ing)", "lift(s|ed|ing)?", "attenuat(e|es|ed|ing)",
+    "dip(s|ped|ping)?", "notch(es|ed|ing)?", "narrow(s|ed|ing)?", "widen(s|ed|ing)?", "compress(es|ed|ing)?", "limit(s|ed|ing)?",
+    "gat(e|es|ed|ing)", "de-?ess(es|ed|ing)?", "trim(s|med|ming)?", "tam(e|es|ed|ing)", "tighten(s|ed|ing)?", "soften(s|ed|ing)?",
+    "smooth(s|ed|ing)?", "shav(e|es|ed|ing)", "roll(s|ed|ing)?\\s+off", "back(s|ed|ing)?\\s+off", "back\\s+away",
+    "turn(s|ed|ing)?\\s+(it\\s+|them\\s+|this\\s+)?(up|down|off|on)", "bring(s|ing)?\\s+(it\\s+|them\\s+)?(up|down|back)", "push(es|ed|ing)?",
+    "drop(s|ped|ping)?", "tweak(s|ed|ing)?", "adjust(s|ed|ing)?", "fix(es|ed|ing)?", "re-?record(s|ed|ing)?", "record(s|ed|ing)?\\s+(it\\s+)?again",
+    "try(ing)?", "tried", "use(s|d)?", "using", "enabl(e|es|ed|ing)", "disabl(e|es|ed|ing)", "switch(es|ed|ing)?", "set(s|ting)?",
+    "mov(e|es|ed|ing)", "step(s|ped|ping)?\\s+back", "stand(s|ing)?\\s+back", "get\\s+(closer|further|farther)", "stay(s|ed|ing)?",
+    "keep(s|ing)?", "avoid(s|ed|ing)?", "ensur(e|es|ed|ing)", "make\\s+sure", "check(s|ed|ing)?", "aim(s|ed|ing)?", "target(s|ed|ing)?",
+    "consider(s|ed|ing)?", "run(s|ning)?", "confirm(s|ed|ing)?", "angle(s|d)?", "position(s|ed|ing)?", "place(s|d)?",
+    "should", "must", "need(s|ed)?\\s+to", "(have|has)\\s+to", "ought", "recommend(s|ed|ation|ations)?", "suggest(s|ed|ion|ions)?",
+    "advis(e|es|ed)", "best\\s+to", "better\\s+to"
+  ],
+  "descriptors": [
+    "thin(ness)?", "nasal(ly)?", "throat(y)?", "mudd(y|iness|led)", "mud", "box(y|iness)", "boom(y|iness)", "harsh(ness)?", "shrill", "brittle",
+    "tinny", "dull", "dark(ness)?", "bright(ness)?", "warm(th)?", "airy", "gritty", "grit", "rasp(y|iness)?", "rough", "honk(y|iness)?", "hollow",
+    "muffled", "veiled", "buried", "thick", "weak", "weedy", "scratchy", "sharp", "piercing", "fatiguing", "lisp(ing|y)?", "whistl(e|es|ing|y)",
+    "hiss(y|ing|es)?", "hum(ming|s)?", "buzz(y|ing|es)?", "rumbl(e|es|ing|y)", "breath(y|iness|ing)?", "mouth\\s+noises?", "click(s|y|ing)?",
+    "echo(es|ey|ing)?", "reverb(erant|eration)?", "room\\s+(sound|tone|noise|reflections?)", "proximity", "distort(ed|ion|ing)?",
+    "crackl(e|es|ing|y)", "static", "out\\s+of\\s+(tune|time|sync|phase)", "off-?key", "pitchy", "flat", "lifeless", "amateur(ish)?",
+    "professional(ly)?", "polished", "punch(y|iness)?", "crisp", "cluttered", "cheap", "lo-?fi", "radio", "telephone", "phas(e|ey)",
+    "sibilan(t|ce)", "plosives?", "pops?", "nois(e|y)", "clipp(ed|ing)", "compress(ed|ion)", "over-?compress(ed|ion)", "saturat(ed|ion)",
+    "loud(er|ness)?", "quiet(er)?", "soft(er)?", "air", "body", "depth", "width", "spac(e|ey|iness)", "presence", "clarity", "clear(er)?",
+    "intelligib(le|ility)", "dynamic(s)?", "squash(ed|ing)?", "pump(ing|ed)?", "muddled"
+  ],
+  "perception_frames": [
+    "sounds?", "sounded", "sounding", "feels?", "felt", "seems?", "seemed", "appears?", "appeared", "comes?\\s+across", "comes?\\s+off",
+    "reads?\\s+as", "lacks?", "lacking", "there\\s+(is|are|was|were)", "there's",
+    "(is|are|was|were)\\s+(too|very|really|quite|pretty|rather|somewhat|slightly|fairly|extremely|a\\s+bit|kind\\s+of|sort\\s+of)"
+  ],
+  "stopwords": [
+    "a", "an", "the", "of", "to", "in", "on", "at", "by", "for", "from", "with", "and", "or", "but", "so", "as", "if", "then", "than", "that",
+    "this", "these", "those", "it", "its", "you", "your", "yours", "we", "our", "they", "them", "their", "be", "been", "being", "is", "are",
+    "was", "were", "can", "could", "may", "might", "will", "would", "also", "just", "still", "too", "very", "really", "quite", "pretty",
+    "rather", "somewhat", "slightly", "fairly", "bit", "kind", "sort", "like", "when", "there", "here", "more", "less", "much", "little",
+    "not", "no", "out", "up", "down", "about", "some", "any", "all", "one", "what", "which", "who", "how", "do", "does", "did", "have",
+    "has", "had", "get", "gets", "into", "over", "under", "off", "own", "only", "even", "such", "other", "another"
+  ]
+}

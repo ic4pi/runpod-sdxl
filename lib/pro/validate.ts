@@ -1,4 +1,5 @@
 import topicsJson from "./topics.json";
+import { pinningViolations } from "./pinning";
 import { LlmOutputSchema, type PhrasedItem, type PhrasingPayload } from "./schema";
 
 /**
@@ -20,7 +21,7 @@ import { LlmOutputSchema, type PhrasedItem, type PhrasingPayload } from "./schem
  * It cannot catch a paraphrased NEW claim that uses no number and no topic word ("your vocal sounds thin"). The prompt forbids it; this does not enforce it.
  */
 
-export type ViolationKind = "shape" | "id" | "number" | "number-word" | "non-ascii-digit" | "topic" | "url";
+export type ViolationKind = "shape" | "id" | "number" | "number-word" | "non-ascii-digit" | "topic" | "url" | "pinned-move" | "imperative" | "claim-word" | "claim-frame";
 export interface Violation {
   kind: ViolationKind;
   detail: string;
@@ -130,10 +131,19 @@ const topicRegexes = Object.entries(topicsJson.topics as Record<string, string[]
 
 const short = (s: string, n = 90) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
+type Extra = (payload: PhrasingPayload, items: readonly PhrasedItem[]) => Violation[];
+
 /**
+ * The full production validator: numeric/id/topic/url checks PLUS the pinning guards (pinned suggested_move, advice-word guard,
+ * claim guard; see pinning.ts).
  * @param raw the model's parsed JSON (unknown shape)
  */
-export function validatePhrasing(payload: PhrasingPayload, raw: unknown): Validation {
+export const validatePhrasing = (payload: PhrasingPayload, raw: unknown): Validation => validateWith(payload, raw, pinningViolations);
+
+/** What Phase 5 shipped: everything EXCEPT the pinning guards. Kept exported so tests can prove the pinning guards are load-bearing. Not used in production. */
+export const validateWithoutPinning = (payload: PhrasingPayload, raw: unknown): Validation => validateWith(payload, raw, () => []);
+
+function validateWith(payload: PhrasingPayload, raw: unknown, extra: Extra): Validation {
   const parsed = LlmOutputSchema.safeParse(raw);
   if (!parsed.success) {
     return { ok: false, violations: parsed.error.issues.slice(0, 5).map((i) => ({ kind: "shape", detail: `${i.path.join(".") || "(root)"}: ${i.message}` })) };
@@ -186,6 +196,7 @@ export function validatePhrasing(payload: PhrasingPayload, raw: unknown): Valida
     }
   }
 
+  violations.push(...extra(payload, items));
   return violations.length === 0 ? { ok: true, items } : { ok: false, violations: dedupe(violations).slice(0, 12) };
 }
 

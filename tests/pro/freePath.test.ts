@@ -82,9 +82,11 @@ describe("Free path never reaches Pro", () => {
     expect(pkg.scripts["check:boundary"]).toContain("check-pro-boundary");
   });
 
-  it("the Pro route is an edge function and lib/pro is edge-safe (no node: imports)", () => {
+  it("the Pro route runs on Node (Next 16 default: no edge export) and lib/pro has no Node-only imports (client.ts runs in the browser)", () => {
     const route = readFileSync(path.join(ROOT, "app/api/phrasing/route.ts"), "utf8");
-    expect(route).toMatch(/export const runtime = "edge"/);
+    expect(route).not.toMatch(/runtime\s*=\s*["']edge["']/);
+    expect(route).not.toMatch(/export const runtime/); // Next 16.4 docs: nodejs is the default; remove the export
+    expect(route).toMatch(/export const maxDuration = 30/);
     for (const f of ["client", "config", "findings", "handler", "hash", "limits", "llm", "prompt", "schema", "validate", "auth"]) {
       expect(readFileSync(path.join(ROOT, "lib/pro", `${f}.ts`), "utf8"), f).not.toMatch(/from "node:|require\("node:|from "(fs|path|crypto)"/);
     }

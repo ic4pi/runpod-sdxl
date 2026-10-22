@@ -10,6 +10,8 @@ export interface LlmTurn {
 export interface LlmCompletion {
   text: string;
   usage?: { inputTokens: number; outputTokens: number };
+  /** The model id the API says it ran (`response.model`). The smoke script requires it to equal PRO_CONFIG.model. */
+  model?: string;
 }
 /** The seam the route is tested through. Production uses the Anthropic SDK; tests inject a fake. */
 export interface LlmClient {
@@ -38,7 +40,7 @@ export function createAnthropicLlm(opts: { apiKey: string; baseURL?: string }): 
       if (res.stop_reason === "refusal") throw new Error("model refused");
       if (res.stop_reason === "max_tokens") throw new Error("output hit max_tokens");
       const text = res.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
-      return { text, usage: { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens } };
+      return { text, model: res.model, usage: { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens } };
     },
   };
 }

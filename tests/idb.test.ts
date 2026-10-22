@@ -32,7 +32,7 @@ function session(id: string, over: Partial<SessionRecord> = {}): SessionRecord {
 const audioFor = (id: string, channels: Float32Array[], sampleRate = SR): StoredAudio => ({ id: `audio-${id}`, sampleRate, length: channels[0]!.length, channels });
 const open = (factory: IDBFactory, maxSessions = 5) => openStorage({ factory, name: "t", maxSessions });
 
-describe("IndexedDB round trip of REAL audio data (typed arrays, byte-exact)", () => {
+describe("IndexedDB round trip of the actual Float32 samples (SYNTHETIC audio, byte-exact)", () => {
   it("mono 48 kHz vocal + noise survives close/reopen bit for bit", async () => {
     const factory = new IDBFactory();
     const vocal = generateSyntheticVocal({ seed: 4, f0Base: 130 }).channels[0]!; // 14 s

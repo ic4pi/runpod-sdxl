@@ -1,0 +1,139 @@
+{
+  "_placeholder": true,
+  "_basis": "Would be replaced by: isolated lead-vocal stems (acapella/stem releases) of commercially released melodic rap tracks, N>=200, each >=60 s, decoded to 48 kHz mono and measured with this repo's lib/dsp/measure pipeline over the full file. One value per metric per percentile knot.",
+  "_invented": "EVERY number below was invented by the authoring engineer to exercise the engine. None was measured from audio, and none comes from any external source or publication. Do not present as measured.",
+  "id": "melodic-rap",
+  "label": "Melodic rap (placeholder)",
+  "version": 1,
+  "percentile_knots": [
+    5,
+    10,
+    25,
+    50,
+    75,
+    90,
+    95
+  ],
+  "metrics": {
+    "integrated_lufs": {
+      "unit": "LUFS",
+      "values": [
+        -27,
+        -25.4,
+        -23.0,
+        -20.4,
+        -18.2,
+        -16.4,
+        -15.4
+      ]
+    },
+    "lra_lu": {
+      "unit": "LU",
+      "values": [
+        3.5,
+        4.4,
+        5.8,
+        7.4,
+        9.2,
+        11.0,
+        12.4
+      ]
+    },
+    "true_peak_dbtp": {
+      "unit": "dBTP",
+      "values": [
+        -7.0,
+        -5.6,
+        -3.8,
+        -2.2,
+        -1.1,
+        -0.3,
+        0.2
+      ]
+    },
+    "crest_active_db": {
+      "unit": "dB",
+      "values": [
+        9.0,
+        9.9,
+        11.2,
+        12.6,
+        14.0,
+        15.2,
+        16.0
+      ]
+    },
+    "boxiness_250hz_rel_db": {
+      "unit": "dB",
+      "values": [
+        -19.5,
+        -18.2,
+        -16.4,
+        -14.6,
+        -13.0,
+        -11.4,
+        -10.4
+      ]
+    },
+    "presence_3k5_rel_db": {
+      "unit": "dB",
+      "values": [
+        -16.5,
+        -15.4,
+        -13.8,
+        -12.2,
+        -10.6,
+        -9.2,
+        -8.2
+      ]
+    },
+    "sibilance_5k9k_rel_db": {
+      "unit": "dB",
+      "values": [
+        -18.5,
+        -17.0,
+        -15.0,
+        -13.0,
+        -11.0,
+        -9.4,
+        -8.4
+      ]
+    },
+    "noise_floor_dbfs": {
+      "unit": "dBFS",
+      "values": [
+        -79,
+        -75,
+        -70,
+        -65,
+        -60,
+        -55,
+        -52
+      ]
+    },
+    "clipped_sample_ratio": {
+      "unit": "ratio",
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "plosive_events_per_min": {
+      "unit": "events/min",
+      "values": [
+        0,
+        0,
+        0.3,
+        1.0,
+        2.2,
+        3.8,
+        5.0
+      ]
+    }
+  }
+}

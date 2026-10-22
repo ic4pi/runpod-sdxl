@@ -1,0 +1,17 @@
+{
+  "_doc": "Coaching copy, keyed by coaching_id. {delta} is the signed delta vs the reference median, {unit} its unit, {profile} the selected reference's label. Copy states only the measured delta; it never invents a number.",
+  "coaching": {
+    "presence_high": { "title": "Too much presence", "explanation": "The 3-4 kHz region sits {delta} {unit} above the {profile} reference, which can sound harsh or nasal." },
+    "presence_low": { "title": "Not enough presence", "explanation": "The 3-4 kHz region sits {delta} {unit} relative to the {profile} reference, so the vocal may sound dull or buried." },
+    "boxiness_high": { "title": "Boxy low-mids", "explanation": "The 250 Hz region is {delta} {unit} above the {profile} reference, which sounds boxy or muddy." },
+    "sibilance_high": { "title": "Harsh 's' sounds", "explanation": "5-9 kHz energy is {delta} {unit} above the {profile} reference, so 's' and 't' sounds may stick out." },
+    "plosive_detected": { "title": "Plosive pops", "explanation": "There are {delta} {unit} more low-frequency pops than the {profile} reference typically shows." },
+    "noise_floor_high": { "title": "Noisy recording", "explanation": "The background noise is {delta} {unit} above the {profile} reference." },
+    "clipping_present": { "title": "Clipping", "explanation": "{delta} {unit} of samples are clipped, more than the {profile} reference. Clipping is distortion that cannot be removed afterwards." },
+    "lufs_over": { "title": "Louder than the reference", "explanation": "Overall loudness is {delta} {unit} above the {profile} reference." },
+    "lufs_under": { "title": "Quieter than the reference", "explanation": "Overall loudness is {delta} {unit} relative to the {profile} reference." },
+    "lra_wide": { "title": "Level swings too much", "explanation": "The loudness range is {delta} {unit} wider than the {profile} reference, so some words will be too quiet or too loud." },
+    "true_peak_hot": { "title": "Peaks run hot", "explanation": "True peaks are {delta} {unit} above the {profile} reference, leaving little headroom." },
+    "crest_low": { "title": "Possibly over-compressed", "explanation": "The peak-to-average gap is {delta} {unit} relative to the {profile} reference, which suggests heavy compression." }
+  }
+}

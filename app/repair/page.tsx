@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AbPlayerPanel } from "@/components/chain/AbPlayerPanel";
+import { CoachingSection } from "@/components/coaching/CoachingSection";
 import { ChainPanel } from "@/components/chain/ChainPanel";
 import { SourceLoader } from "@/components/chain/SourceLoader";
 import { useChain } from "@/lib/state/chainStore";
@@ -15,6 +16,7 @@ export default function RepairPage() {
     w.__chain = useChain;
     void import("@/lib/dsp/chain/native").then((m) => (w.__native = m));
     void import("@/lib/dsp/config").then((m) => (w.__config = m));
+    void import("@/lib/state/coachingStore").then((m) => (w.__coaching = m.useCoaching));
   }, []);
   const blocked = !analysis || busy !== null || popDecision === "pending";
   return (
@@ -41,6 +43,7 @@ export default function RepairPage() {
             </pre>
           )}
           <AbPlayerPanel />
+          <CoachingSection />
           <ChainPanel />
         </>
       )}

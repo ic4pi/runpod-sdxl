@@ -71,3 +71,13 @@ per-stage bypass -> level-matched A/B playback). Screenshots land in `e2e-out/`.
 npm run dev      # http://localhost:3000/repair
 ```
 Use a demo button, or drop your own recordings in `fixtures/audio/` (see its README) and click them under "Fixtures".
+
+---
+
+# Phase 3 (reference differential, decision table, Free coaching)
+
+```
+npm test                 # decision.test.ts, extract.test.ts, coachingUi.test.tsx (+ all earlier suites)
+npm run e2e:coaching     # real Chromium: empty state, reference selection, placeholder banner, deltas, processed target
+```
+Test inputs: `decision.test.ts` and `coachingUi.test.tsx` use SYNTHETIC METRIC VALUES only (derived from the invented placeholder profiles). `extract.test.ts` has two groups: hand-built synthetic report objects, and a group that runs the real Phase 1 functions on GENERATED synthetic audio (tones, noise, the synthetic vocal). The e2e uses the built-in synthetic demo vocal. No real recording is used anywhere.

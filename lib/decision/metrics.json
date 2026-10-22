@@ -1,0 +1,95 @@
+{
+  "_doc": "Metric registry. Every metric names the exact Phase 1 function in lib/dsp/measure/* it reads, the unit of the value, the unit of a DELTA, and its precise definition. 'extract' is declarative: adding a metric of an existing kind needs no TypeScript. Third-octave bands are matched by NOMINAL centre (IEC 61260 base-10 centres, 2% tolerance): 250 -> 251 Hz, 3150 -> 3162 Hz, 4000 -> 3981 Hz, 5000 -> 5012 Hz, 6300 -> 6310 Hz, 8000 -> 7943 Hz.",
+  "metrics": [
+    {
+      "id": "integrated_lufs",
+      "label": "Integrated loudness",
+      "measure_fn": "measureLoudness",
+      "unit": "LUFS",
+      "delta_unit": "LU",
+      "definition": "ITU-R BS.1770-4 integrated loudness of the whole file (result field 'integrated'). A delta of +3 LU means 3 LU louder than the reference median.",
+      "extract": { "kind": "field", "path": "integrated.value", "unit_path": "integrated.unit" }
+    },
+    {
+      "id": "lra_lu",
+      "label": "Loudness range",
+      "measure_fn": "measureLoudness",
+      "unit": "LU",
+      "delta_unit": "LU",
+      "definition": "EBU Tech 3342 loudness range (P95 - P10 of gated 3 s short-term loudness), result field 'lra'.",
+      "extract": { "kind": "field", "path": "lra.value", "unit_path": "lra.unit" }
+    },
+    {
+      "id": "true_peak_dbtp",
+      "label": "True peak",
+      "measure_fn": "measureTruePeak",
+      "unit": "dBTP",
+      "delta_unit": "dB",
+      "definition": "Highest 4x-oversampled peak across channels, result field 'truePeak'.",
+      "extract": { "kind": "field", "path": "truePeak.value", "unit_path": "truePeak.unit" }
+    },
+    {
+      "id": "crest_active_db",
+      "label": "Crest factor (active audio)",
+      "measure_fn": "measureCrest",
+      "unit": "dB",
+      "delta_unit": "dB",
+      "definition": "Peak over RMS (dB) restricted to 100 ms blocks above the activity floor, result field 'activeCrest'. Lower = more compressed.",
+      "extract": { "kind": "field", "path": "activeCrest.value", "unit_path": "activeCrest.unit" }
+    },
+    {
+      "id": "boxiness_250hz_rel_db",
+      "label": "Boxiness (250 Hz band)",
+      "measure_fn": "measureThirdOctave",
+      "unit": "dB",
+      "delta_unit": "dB",
+      "definition": "Level of the 250 Hz third-octave band (223-281 Hz) minus the file's total level. Level-independent spectral shape: positive delta = more boxy than the reference.",
+      "extract": { "kind": "band_rel_db", "centers_hz": [250] }
+    },
+    {
+      "id": "presence_3k5_rel_db",
+      "label": "Presence (about 3.5 kHz)",
+      "measure_fn": "measureThirdOctave",
+      "unit": "dB",
+      "delta_unit": "dB",
+      "definition": "Power sum of the 3150 Hz and 4000 Hz third-octave bands (2.8-4.5 kHz, which straddle 3.5 kHz because no third-octave band is centred on 3.5 kHz) minus the file's total level. Positive delta = more presence than the reference.",
+      "extract": { "kind": "band_rel_db", "centers_hz": [3150, 4000] }
+    },
+    {
+      "id": "sibilance_5k9k_rel_db",
+      "label": "Sibilance (5-9 kHz)",
+      "measure_fn": "measureThirdOctave",
+      "unit": "dB",
+      "delta_unit": "dB",
+      "definition": "Power sum of the 5000, 6300 and 8000 Hz third-octave bands (4.5-8.9 kHz, the closest whole-band cover of 5-9 kHz) minus the file's total level. Positive delta = harsher 's' energy than the reference.",
+      "extract": { "kind": "band_rel_db", "centers_hz": [5000, 6300, 8000] }
+    },
+    {
+      "id": "noise_floor_dbfs",
+      "label": "Noise floor",
+      "measure_fn": "measureNoise",
+      "unit": "dBFS",
+      "delta_unit": "dB",
+      "definition": "RMS of the validated noise print (DC removed), result field 'noiseFloor'. Unavailable without a valid noise print. Positive delta = noisier than the reference.",
+      "extract": { "kind": "field", "path": "noiseFloor.value", "unit_path": "noiseFloor.unit" }
+    },
+    {
+      "id": "clipped_sample_ratio",
+      "label": "Clipped samples",
+      "measure_fn": "measureClipping",
+      "unit": "ratio",
+      "delta_unit": "ratio",
+      "definition": "Samples inside flat-top clipping runs (result field 'clippedSamples') divided by all samples across channels. 0 = none.",
+      "extract": { "kind": "ratio", "numerator_path": "clippedSamples.value", "numerator_unit": "samples", "denominator": "total_samples" }
+    },
+    {
+      "id": "plosive_events_per_min",
+      "label": "Plosive pops",
+      "measure_fn": "measurePlosives",
+      "unit": "events/min",
+      "delta_unit": "events/min",
+      "definition": "Number of low-frequency pop events (result field 'eventCount') per minute of audio. Phase 1 plosive detector, default placeholder thresholds.",
+      "extract": { "kind": "per_minute", "path": "eventCount.value", "unit_path": "eventCount.unit" }
+    }
+  ]
+}

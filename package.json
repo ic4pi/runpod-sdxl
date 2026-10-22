@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "harness": "tsx scripts/harness-cli.ts",
-    "e2e": "node scripts/e2e-chain.mjs"
+    "e2e": "node scripts/e2e-chain.mjs",
+    "e2e:coaching": "node scripts/e2e-coaching.mjs"
   },
   "dependencies": {
     "next": "16.4.2",

@@ -1,0 +1,135 @@
+{
+  "_doc": "Authored decision table (data, not code). threshold_pct = PERCENTILE (0-100) of the selected reference profile's corpus distribution for the rule's metric. direction 'above': fires when the user's value is strictly greater than that percentile; 'below': strictly less. Percentiles come from the profile's percentile_knots (linear interpolation between knots). Every threshold carries a 'calibration' note naming the corpus that must replace the placeholder. Adding a rule = adding an object here; no TypeScript changes.",
+  "schema": {
+    "id": "string",
+    "metric": "id in lib/decision/metrics.json",
+    "threshold_pct": "number within the profile knot range",
+    "direction": "above|below",
+    "coaching_id": "id in lib/decision/coaching.json",
+    "suggested_move": "string",
+    "severity": "info|warn|critical",
+    "calibration": "string starting 'TODO: CALIBRATE — corpus:'"
+  },
+  "rules": [
+    {
+      "id": "presence_high",
+      "metric": "presence_3k5_rel_db",
+      "threshold_pct": 90,
+      "direction": "above",
+      "coaching_id": "presence_high",
+      "suggested_move": "EQ stage: pull the 3.5 kHz bell down 2-3 dB with a wide Q, or reduce the presence boost.",
+      "severity": "warn",
+      "calibration": "TODO: CALIBRATE — corpus: isolated lead-vocal stems (acapella/stem releases) of commercially released tracks in the selected profile's genre (trap, boom-bap, drill or melodic rap), N>=200 per genre, each >=60 s, decoded to 48 kHz mono and measured with lib/dsp/measure over the full file; the 90th percentile of presence_3k5_rel_db over that corpus replaces the placeholder profile knot this rule reads."
+    },
+    {
+      "id": "presence_low",
+      "metric": "presence_3k5_rel_db",
+      "threshold_pct": 10,
+      "direction": "below",
+      "coaching_id": "presence_low",
+      "suggested_move": "EQ stage: raise the 3.5 kHz bell 2-3 dB; check the de-esser is not also dulling the vocal.",
+      "severity": "warn",
+      "calibration": "TODO: CALIBRATE — corpus: isolated lead-vocal stems (acapella/stem releases) of commercially released tracks in the selected profile's genre (trap, boom-bap, drill or melodic rap), N>=200 per genre, each >=60 s, decoded to 48 kHz mono and measured with lib/dsp/measure over the full file; the 10th percentile of presence_3k5_rel_db over that corpus replaces the placeholder profile knot this rule reads."
+    },
+    {
+      "id": "boxiness_high",
+      "metric": "boxiness_250hz_rel_db",
+      "threshold_pct": 90,
+      "direction": "above",
+      "coaching_id": "boxiness_high",
+      "suggested_move": "EQ stage: cut 2-3 dB around 250 Hz (Q about 1). If the room caused it, record farther from walls.",
+      "severity": "warn",
+      "calibration": "TODO: CALIBRATE — corpus: isolated lead-vocal stems (acapella/stem releases) of commercially released tracks in the selected profile's genre (trap, boom-bap, drill or melodic rap), N>=200 per genre, each >=60 s, decoded to 48 kHz mono and measured with lib/dsp/measure over the full file; the 90th percentile of boxiness_250hz_rel_db over that corpus replaces the placeholder profile knot this rule reads."
+    },
+    {
+      "id": "sibilance_high",
+      "metric": "sibilance_5k9k_rel_db",
+      "threshold_pct": 90,
+      "direction": "above",
+      "coaching_id": "sibilance_high",
+      "suggested_move": "De-esser stage: lower the threshold or raise the ratio; also move the mic slightly off-axis when recording.",
+      "severity": "warn",
+      "calibration": "TODO: CALIBRATE — corpus: isolated lead-vocal stems (acapella/stem releases) of commercially released tracks in the selected profile's genre (trap, boom-bap, drill or melodic rap), N>=200 per genre, each >=60 s, decoded to 48 kHz mono and measured with lib/dsp/measure over the full file; the 90th percentile of sibilance_5k9k_rel_db over that corpus replaces the placeholder profile knot this rule reads."
+    },
+    {
+      "id": "plosive_detected",
+      "metric": "plosive_events_per_min",
+      "threshold_pct": 90,
+      "direction": "above",
+      "coaching_id": "plosive_detected",
+      "suggested_move": "De-plosive stage: run it and confirm each detected pop. When recording, use a pop filter or angle the mic off-axis.",
+      "severity": "warn",
+      "calibration": "TODO: CALIBRATE — corpus: isolated lead-vocal stems (acapella/stem releases) of commercially released tracks in the selected profile's genre (trap, boom-bap, drill or melodic rap), N>=200 per genre, each >=60 s, decoded to 48 kHz mono and measured with lib/dsp/measure over the full file; the 90th percentile of plosive_events_per_min over that corpus replaces the placeholder profile knot this rule reads."
+    },
+    {
+      "id": "noise_floor_high",
+      "metric": "noise_floor_dbfs",
+      "threshold_pct": 90,
+      "direction": "above",
+      "coaching_id": "noise_floor_high",
+      "suggested_move": "Keep noise reduction on and supply a clean 2-5 s noise print. Next take: record in a quieter room or closer to the mic.",
+      "severity": "warn",
+      "calibration": "TODO: CALIBRATE — corpus: isolated lead-vocal stems (acapella/stem releases) of commercially released tracks in the selected profile's genre (trap, boom-bap, drill or melodic rap), N>=200 per genre, each >=60 s, decoded to 48 kHz mono and measured with lib/dsp/measure over the full file; the 90th percentile of noise_floor_dbfs over that corpus replaces the placeholder profile knot this rule reads."
+    },
+    {
+      "id": "clipping_present",
+      "metric": "clipped_sample_ratio",
+      "threshold_pct": 95,
+      "direction": "above",
+      "coaching_id": "clipping_present",
+      "suggested_move": "Re-record with the input gain lower. Clipping cannot be repaired by this app.",
+      "severity": "critical",
+      "calibration": "TODO: CALIBRATE — corpus: isolated lead-vocal stems (acapella/stem releases) of commercially released tracks in the selected profile's genre (trap, boom-bap, drill or melodic rap), N>=200 per genre, each >=60 s, decoded to 48 kHz mono and measured with lib/dsp/measure over the full file; the 95th percentile of clipped_sample_ratio over that corpus replaces the placeholder profile knot this rule reads."
+    },
+    {
+      "id": "lufs_over",
+      "metric": "integrated_lufs",
+      "threshold_pct": 90,
+      "direction": "above",
+      "coaching_id": "lufs_over",
+      "suggested_move": "Lower the make-up gain on the compressor or the limiter drive.",
+      "severity": "info",
+      "calibration": "TODO: CALIBRATE — corpus: isolated lead-vocal stems (acapella/stem releases) of commercially released tracks in the selected profile's genre (trap, boom-bap, drill or melodic rap), N>=200 per genre, each >=60 s, decoded to 48 kHz mono and measured with lib/dsp/measure over the full file; the 90th percentile of integrated_lufs over that corpus replaces the placeholder profile knot this rule reads."
+    },
+    {
+      "id": "lufs_under",
+      "metric": "integrated_lufs",
+      "threshold_pct": 10,
+      "direction": "below",
+      "coaching_id": "lufs_under",
+      "suggested_move": "Raise the compressor make-up gain; make sure the noise gate is not pulling the level down.",
+      "severity": "info",
+      "calibration": "TODO: CALIBRATE — corpus: isolated lead-vocal stems (acapella/stem releases) of commercially released tracks in the selected profile's genre (trap, boom-bap, drill or melodic rap), N>=200 per genre, each >=60 s, decoded to 48 kHz mono and measured with lib/dsp/measure over the full file; the 10th percentile of integrated_lufs over that corpus replaces the placeholder profile knot this rule reads."
+    },
+    {
+      "id": "lra_wide",
+      "metric": "lra_lu",
+      "threshold_pct": 90,
+      "direction": "above",
+      "coaching_id": "lra_wide",
+      "suggested_move": "Compressor stage: lower the threshold or raise the ratio so quiet words come up and loud words come down.",
+      "severity": "warn",
+      "calibration": "TODO: CALIBRATE — corpus: isolated lead-vocal stems (acapella/stem releases) of commercially released tracks in the selected profile's genre (trap, boom-bap, drill or melodic rap), N>=200 per genre, each >=60 s, decoded to 48 kHz mono and measured with lib/dsp/measure over the full file; the 90th percentile of lra_lu over that corpus replaces the placeholder profile knot this rule reads."
+    },
+    {
+      "id": "true_peak_hot",
+      "metric": "true_peak_dbtp",
+      "threshold_pct": 95,
+      "direction": "above",
+      "coaching_id": "true_peak_hot",
+      "suggested_move": "Limiter stage: lower the ceiling.",
+      "severity": "info",
+      "calibration": "TODO: CALIBRATE — corpus: isolated lead-vocal stems (acapella/stem releases) of commercially released tracks in the selected profile's genre (trap, boom-bap, drill or melodic rap), N>=200 per genre, each >=60 s, decoded to 48 kHz mono and measured with lib/dsp/measure over the full file; the 95th percentile of true_peak_dbtp over that corpus replaces the placeholder profile knot this rule reads."
+    },
+    {
+      "id": "crest_low",
+      "metric": "crest_active_db",
+      "threshold_pct": 10,
+      "direction": "below",
+      "coaching_id": "crest_low",
+      "suggested_move": "Compressor stage: ease the ratio or raise the threshold.",
+      "severity": "info",
+      "calibration": "TODO: CALIBRATE — corpus: isolated lead-vocal stems (acapella/stem releases) of commercially released tracks in the selected profile's genre (trap, boom-bap, drill or melodic rap), N>=200 per genre, each >=60 s, decoded to 48 kHz mono and measured with lib/dsp/measure over the full file; the 10th percentile of crest_active_db over that corpus replaces the placeholder profile knot this rule reads."
+    }
+  ]
+}

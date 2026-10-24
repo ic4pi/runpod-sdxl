@@ -84,7 +84,7 @@ describe("happy path and the numeric rejection loop", () => {
 
   it("a hung model is cut off by the per-attempt timeout", async () => {
     const p = THREE_FINDINGS();
-    const hang: LlmClient = { complete: ({ signal }) => new Promise((_, rej) => signal.addEventListener("abort", () => rej(new Error("aborted")))) };
+    const hang: LlmClient = { modelId: PRO_CONFIG.model, complete: ({ signal }) => new Promise((_, rej) => signal.addEventListener("abort", () => rej(new Error("aborted")))) };
     const { call } = await setup(hang, { now: () => Date.now() });
     const orig = PRO_CONFIG.attemptTimeoutMs;
     const started = Date.now();

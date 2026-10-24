@@ -2,7 +2,7 @@ import { parseProKeys } from "@/lib/pro/auth";
 import { PRO_CONFIG } from "@/lib/pro/config";
 import { handlePhrasing, type HandlerDeps } from "@/lib/pro/handler";
 import { TtlLru } from "@/lib/pro/limits";
-import { createAnthropicLlm } from "@/lib/pro/llm";
+import { chooseLlm } from "@/lib/pro/provider";
 import { createRateLimiter } from "@/lib/pro/ratestore";
 import type { PhrasingResult } from "@/lib/pro/schema";
 
@@ -24,12 +24,19 @@ const getRate = () =>
     return r;
   })());
 
+let llmChoice: ReturnType<typeof chooseLlm> | null = null;
+const getLlm = () =>
+  (llmChoice ??= (() => {
+    const c = chooseLlm(process.env);
+    console.log(JSON.stringify({ event: "phrasing-config", provider: c.provider, model: c.llm?.modelId ?? null, ...(c.llm ? {} : { llmUnavailable: c.reason }) }));
+    return c;
+  })());
+
 function deps(): HandlerDeps {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
   const { keys, errors } = parseProKeys(process.env.PRO_TOKEN_HASHES);
   if (errors.length) console.error(JSON.stringify({ event: "pro-keys-config-error", errors }));
   return {
-    llm: apiKey ? createAnthropicLlm({ apiKey, baseURL: process.env.ANTHROPIC_BASE_URL || undefined }) : null,
+    llm: getLlm().llm,
     proKeys: keys,
     cache,
     limiter: getRate().limiter,

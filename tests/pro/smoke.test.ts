@@ -16,6 +16,11 @@ let url = "";
 const server = createServer((req, res) => {
   req.resume();
   req.on("end", () => {
+    if (req.url?.endsWith("/chat/completions")) {
+      const body = JSON.stringify({ items: tier1FallbackItems(p) });
+      const echoed = mode === "or-wrong-model" ? "openai/gpt-5" : mode === "or-dated" ? "anthropic/claude-haiku-5-5-20261001" : "anthropic/claude-haiku-5-5";
+      return void res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ id: "gen-1", model: echoed, choices: [{ finish_reason: "stop", message: { role: "assistant", content: body } }], usage: { prompt_tokens: 1500, completion_tokens: 400 } }));
+    }
     if (mode === "http500") return void res.writeHead(500, { "content-type": "application/json" }).end(JSON.stringify({ type: "error", error: { type: "api_error", message: "boom" } }));
     const items = tier1FallbackItems(p).map((i) => ({ ...i }));
     let text = JSON.stringify({ items });
@@ -75,10 +80,29 @@ describe("smoke-pro-model.mjs (against a stub, not the real API)", () => {
     }, 90_000);
   }
 
+  const OR = (extra: Record<string, string> = {}) => ({ OPENROUTER_API_KEY: "sk-or-stub", OPENROUTER_MODEL: "anthropic/claude-haiku-5-5", OPENROUTER_BASE_URL: `${url}/api/v1`, ...extra });
+  it("OpenRouter: passes through the same checks (provider printed, token counts real, dated slug of the requested model accepted)", async () => {
+    for (const m of ["or-ok", "or-dated"]) {
+      const r = await run(m, OR());
+      expect(r.code, r.out).toBe(0);
+      expect(r.out).toMatch(/provider\s*: openrouter/);
+      expect(r.out).toMatch(/prompt tokens \(real\)\s*: 1500/);
+      expect(r.out).toContain("SMOKE PASSED");
+    }
+  }, 90_000);
+  it("OpenRouter: FAILS on a different model than requested, and exits 2 when OPENROUTER_MODEL is missing", async () => {
+    const wrong = await run("or-wrong-model", OR());
+    expect(wrong.code).toBe(1);
+    expect(wrong.out).toMatch(/WRONG MODEL/);
+    const missing = await run("or-ok", { OPENROUTER_API_KEY: "sk-or-stub", OPENROUTER_BASE_URL: `${url}/api/v1` });
+    expect(missing.code).toBe(2);
+    expect(missing.out).toMatch(/OPENROUTER_MODEL is not set/);
+  }, 90_000);
+
   it("with no API key: exit 2, says nothing was verified, and never prints a pass", async () => {
     const r = await run("good", null);
     expect(r.code).toBe(2);
-    expect(r.out).toMatch(/not set\. Nothing was called; nothing is verified/);
+    expect(r.out).toMatch(/Nothing was called; nothing is verified/);
     expect(r.out).not.toContain("SMOKE PASSED");
   }, 90_000);
 });

@@ -106,3 +106,8 @@ All audio is synthetic (generated); no real recording is used. The dev e2e scrip
 - **Needs a real key (not run in CI, not run here):** `ANTHROPIC_API_KEY=... npm run smoke:pro`, then `npx tsx scripts/pro-cost.ts <promptTokens> <completionTokens>`.
 - **Needs real audio (not run here):** `npm run build && npm run measure:real -- /path/to/real-vocal.wav`. Run it on several files (loud, quiet, clipped, sibilant). Read the "TRUE-PEAK CEILING CHECK" block: a BREACH (exit 3) means `cfg.export.mp3.ceilingMarginDb` (0.5) is too small; the script says by how much.
 - Env for Pro: `ANTHROPIC_API_KEY`, `PRO_TOKEN_HASHES` (JSON list or comma-separated hashes; make one with `npm run rotate:pro-key`), optional `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`, optional `ANTHROPIC_BASE_URL`.
+
+## OpenRouter
+- `tests/pro/openrouter.test.ts` (request shape, error classification, handler integration, provider selection) and 3 extra cases in `smoke.test.ts`. All against fakes/stubs.
+- `E2E_PROVIDER=openrouter npm run e2e:pro` runs the same 16 real-route checks through OpenRouter's wire format (stub server).
+- Real check (needs a key and network access to openrouter.ai): `OPENROUTER_API_KEY=sk-or-... OPENROUTER_MODEL=<slug> npm run smoke:pro`.

@@ -20,6 +20,8 @@ export const PRO_CONFIG = {
   maxRetries: 2,
   attemptTimeoutMs: 8000,
   totalDeadlineMs: 22000,
+  /** OpenRouter (OpenAI-compatible API). The model id is NOT defaulted: it must be set in OPENROUTER_MODEL from openrouter.ai/models. */
+  openrouter: { baseURL: "https://openrouter.ai/api/v1" },
   limits: {
     maxFindings: 12,
     maxRequestBytes: 24_000,

@@ -3,7 +3,7 @@ import { canonicalViolations } from "./canonical";
 import { PRO_CONFIG } from "./config";
 import { tier1FallbackItems } from "./findings";
 import { canonicalJson, sha256Hex } from "./hash";
-import type { LlmClient, LlmTurn } from "./llm";
+import { LlmError, type LlmClient, type LlmTurn } from "./llm";
 import type { RateLimit, TtlLru } from "./limits";
 import { buildRetryMessage, buildUserMessage, SYSTEM_PROMPT } from "./prompt";
 import { PhrasingRequestSchema, type PhrasingPayload, type PhrasingResult } from "./schema";
@@ -61,7 +61,8 @@ export async function handlePhrasing(req: Request, deps: HandlerDeps): Promise<R
   const forged = canonicalViolations(payload);
   if (forged.length) return json({ error: "non-canonical-payload", issues: forged.slice(0, 5) }, 400);
 
-  const base = { prompt_version: PRO_CONFIG.promptVersion, model: PRO_CONFIG.model };
+  const modelId = deps.llm?.modelId ?? PRO_CONFIG.model;
+  const base = { prompt_version: PRO_CONFIG.promptVersion, model: modelId };
   const fallback = (reason: string, attempts: number, rejections: string[] = []): Response => {
     const body: PhrasingResult = { source: "tier1-fallback", items: tier1FallbackItems(payload), attempts, fallback_reason: reason.slice(0, 200), ...(rejections.length ? { rejections } : {}), ...base };
     deps.log({ event: "phrasing", source: "tier1-fallback", reason, attempts, ms: deps.now() - t0 });
@@ -69,7 +70,7 @@ export async function handlePhrasing(req: Request, deps: HandlerDeps): Promise<R
   };
 
   try {
-    const key = await sha256Hex(canonicalJson({ v: PRO_CONFIG.promptVersion, model: PRO_CONFIG.model, payload }));
+    const key = await sha256Hex(canonicalJson({ v: PRO_CONFIG.promptVersion, model: modelId, payload }));
     const hit = deps.cache.get(key, deps.now());
     if (hit) {
       deps.log({ event: "phrasing", source: "cache", hash: key.slice(0, 12), ms: deps.now() - t0 });
@@ -112,6 +113,7 @@ export async function handlePhrasing(req: Request, deps: HandlerDeps): Promise<R
         usageOut += c.usage?.outputTokens ?? 0;
       } catch (e) {
         rejections.push(`llm error: ${e instanceof Error ? e.message : String(e)}`.slice(0, 200));
+        if (e instanceof LlmError && !e.retryable) break; // bad key / no credits / bad request: another attempt cannot succeed
         continue;
       } finally {
         clearTimeout(timer);

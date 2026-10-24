@@ -15,6 +15,8 @@ export interface LlmCompletion {
 }
 /** The seam the route is tested through. Production uses the Anthropic SDK; tests inject a fake. */
 export interface LlmClient {
+  /** The model id this client asks for (provider-specific: "claude-haiku-5-5" on Anthropic, e.g. "anthropic/claude-haiku-5-5" on OpenRouter). Part of the cache key. */
+  readonly modelId: string;
   complete(args: { system: string; messages: LlmTurn[]; signal: AbortSignal }): Promise<LlmCompletion>;
 }
 
@@ -26,6 +28,7 @@ export interface LlmClient {
 export function createAnthropicLlm(opts: { apiKey: string; baseURL?: string }): LlmClient {
   const client = new Anthropic({ apiKey: opts.apiKey, baseURL: opts.baseURL, maxRetries: 0 });
   return {
+    modelId: PRO_CONFIG.model,
     async complete({ system, messages, signal }) {
       const res = await client.messages.create(
         {
@@ -43,4 +46,15 @@ export function createAnthropicLlm(opts: { apiKey: string; baseURL?: string }): 
       return { text, model: res.model, usage: { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens } };
     },
   };
+}
+
+/** An error from a provider. `retryable: false` (bad key, no credits, bad request) stops the handler's retry loop: another attempt cannot succeed and would only cost. */
+export class LlmError extends Error {
+  constructor(
+    message: string,
+    public readonly retryable: boolean,
+  ) {
+    super(message);
+    this.name = "LlmError";
+  }
 }

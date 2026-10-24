@@ -1,6 +1,7 @@
 // Pro phrasing e2e against the PRODUCTION build: real `next start` (edge route, real Anthropic SDK) -> STUB Anthropic server (no real API key/network).
 // Also proves in a real browser that the Free path (/repair) makes zero /api/phrasing requests.
-// Usage: npm run build && npm run e2e:pro
+// Usage: npm run build && npm run e2e:pro                       (direct Anthropic wire format)
+//        npm run build && E2E_PROVIDER=openrouter npm run e2e:pro (the same checks through OpenRouter's chat-completions format)
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -23,6 +24,8 @@ const payload = THREE_FINDINGS();
 const variant = (i) => payloadFrom(metricsTripping({ boxiness_250hz_rel_db: profileValueAtPct(trap, "boxiness_250hz_rel_db", 90) + 1 + i * 0.1 }));
 
 // ---- stub Anthropic: mode decides what the "model" says
+const OR = process.env.E2E_PROVIDER === "openrouter";
+const OR_SLUG = "anthropic/claude-haiku-5-5";
 let mode = "good";
 const upstream = [];
 const stub = createServer((req, res) => {
@@ -30,12 +33,14 @@ const stub = createServer((req, res) => {
   req.on("data", (c) => (body += c));
   req.on("end", () => {
     const j = JSON.parse(body || "{}");
-    upstream.push({ url: req.url, model: j.model, hasFormat: !!j.output_config?.format, effort: j.output_config?.effort, turns: j.messages?.length });
-    const first = j.messages[0].content;
+    const msgs = OR ? j.messages.filter((m) => m.role !== "system") : j.messages; // OpenRouter carries the system prompt as a message
+    upstream.push({ url: req.url, model: j.model, hasFormat: OR ? j.response_format?.type === "json_schema" && j.provider?.require_parameters === true : !!j.output_config?.format, effort: j.output_config?.effort, turns: msgs.length, auth: req.headers.authorization });
+    const first = msgs[0].content;
     const p = JSON.parse(first.slice(first.indexOf("{")));
     const items = p.detected_findings.map((f) => ({ coaching_id: f.coaching_id, headline: f.tier1.title, explanation: `In plain words: ${f.tier1.message}`, suggested_move: f.tier1.suggested_move }));
     if (mode === "bad") items[0].suggested_move = "Cut 777 dB.";
     res.setHeader("content-type", "application/json");
+    if (OR) return void res.end(JSON.stringify({ id: "gen-stub", model: j.model, choices: [{ index: 0, finish_reason: "stop", message: { role: "assistant", content: JSON.stringify({ items }) } }], usage: { prompt_tokens: 900, completion_tokens: 300 } }));
     res.end(JSON.stringify({ id: "msg_stub", type: "message", role: "assistant", model: j.model, content: [{ type: "text", text: JSON.stringify({ items }) }], stop_reason: "end_turn", stop_sequence: null, usage: { input_tokens: 900, output_tokens: 300 } }));
   });
 });
@@ -44,8 +49,9 @@ await new Promise((r) => stub.listen(STUB_PORT, r));
 const upstash = await startStubUpstash();
 const env = {
   ...process.env,
-  ANTHROPIC_API_KEY: "sk-stub",
-  ANTHROPIC_BASE_URL: `http://localhost:${STUB_PORT}`,
+  ...(OR
+    ? { LLM_PROVIDER: "openrouter", OPENROUTER_API_KEY: "sk-or-stub", OPENROUTER_MODEL: OR_SLUG, OPENROUTER_BASE_URL: `http://localhost:${STUB_PORT}/api/v1`, ANTHROPIC_API_KEY: "" }
+    : { ANTHROPIC_API_KEY: "sk-stub", ANTHROPIC_BASE_URL: `http://localhost:${STUB_PORT}` }),
   PRO_TOKEN_HASHES: JSON.stringify([{ hash: createHash("sha256").update(KEY).digest("hex"), label: "e2e-key", issued_at: "2026-10-22" }]),
   UPSTASH_REDIS_REST_URL: upstash.url,
   UPSTASH_REDIS_REST_TOKEN: upstash.token,
@@ -70,7 +76,8 @@ try {
   let r = await post();
   let b = await r.json();
   check("good model answer -> 200, source llm, 1 upstream call", r.status === 200 && b.source === "llm" && upstream.length === 1, `source=${b.source} upstream=${upstream.length}`);
-  check("SDK request: model, structured output format, effort low", upstream[0].model === "claude-haiku-5-5" && upstream[0].hasFormat && upstream[0].effort === "low", JSON.stringify(upstream[0]));
+  if (OR) check("OpenRouter request: slug as model, json_schema response_format + require_parameters, Bearer OpenRouter key, URL /api/v1/chat/completions, response reports the slug", upstream[0].model === OR_SLUG && upstream[0].hasFormat && upstream[0].auth === "Bearer sk-or-stub" && upstream[0].url === "/api/v1/chat/completions" && b.model === OR_SLUG, JSON.stringify(upstream[0]));
+  else check("SDK request: model, structured output format, effort low", upstream[0].model === "claude-haiku-5-5" && upstream[0].hasFormat && upstream[0].effort === "low", JSON.stringify(upstream[0]));
 
   r = await post();
   b = await r.json();
@@ -136,6 +143,7 @@ check("/repair renders (Pro slot present, no key, no reference yet)", proShown =
 check("Free path: ZERO requests to /api/phrasing on load, and no key = no call", hits.length === 0, `hits=${hits.length}`);
 await browser.close();
 
+if (process.env.E2E_DEBUG) console.log(serverLog.join(""));
 stop();
 const failed = results.filter((x) => !x).length;
 console.log(failed ? `\n${failed} FAILED` : `\nall ${results.length} passed`);

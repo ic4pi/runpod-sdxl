@@ -6,6 +6,7 @@ import type { LlmClient, LlmTurn } from "../../lib/pro/llm";
 import { RateLimiter, TtlLru } from "../../lib/pro/limits";
 import { tier1FallbackItems } from "../../lib/pro/findings";
 import type { PhrasedItem, PhrasingPayload, PhrasingResult } from "../../lib/pro/schema";
+import { PRO_CONFIG } from "../../lib/pro/config";
 import { ABSENT } from "./helpers";
 
 export const KEY = "pro-key-for-tests-123";
@@ -13,6 +14,7 @@ export const NONCE = "a".repeat(40);
 
 export type Script = (string | Error | ((turns: LlmTurn[]) => string))[];
 export class FakeLlm implements LlmClient {
+  readonly modelId: string = PRO_CONFIG.model;
   calls: LlmTurn[][] = [];
   constructor(private script: Script) {}
   async complete({ messages }: { messages: LlmTurn[] }) {

@@ -1,13 +1,14 @@
-// ONE real call to the Anthropic API through the production code path (createAnthropicLlm + SYSTEM_PROMPT + output schema),
+// ONE real call through the production code path (the provider chosen from env: Anthropic direct, or OpenRouter; + SYSTEM_PROMPT + output schema),
 // then the production validator. Exits non-zero, loudly, on: no key, API error, wrong model echoed, empty output, schema violation,
 // or ANY validator rejection (numeric token, id, pinned move, imperative, claim, topic, url).
 //   ANTHROPIC_API_KEY=sk-ant-... npm run smoke:pro
+//   OPENROUTER_API_KEY=sk-or-... OPENROUTER_MODEL=<slug from openrouter.ai/models> npm run smoke:pro      (LLM_PROVIDER=openrouter to force it)
 // This is the only place the real model id is exercised. It costs about a twentieth of a cent.
 import { performance } from "node:perf_hooks";
 
 const { PRO_CONFIG } = await import("../lib/pro/config.ts");
 const { callCostUsd } = await import("../lib/pro/cost.ts");
-const { createAnthropicLlm } = await import("../lib/pro/llm.ts");
+const { chooseLlm } = await import("../lib/pro/provider.ts");
 const { buildUserMessage, SYSTEM_PROMPT } = await import("../lib/pro/prompt.ts");
 const { LlmOutputSchema, PhrasingPayloadSchema } = await import("../lib/pro/schema.ts");
 const { validatePhrasing, describeViolations } = await import("../lib/pro/validate.ts");
@@ -18,14 +19,14 @@ const fail = (code, msg) => {
   process.exit(code);
 };
 
-const apiKey = process.env.ANTHROPIC_API_KEY;
-if (!apiKey) fail(2, "ANTHROPIC_API_KEY is not set. Nothing was called; nothing is verified.");
+const choice = chooseLlm(process.env);
+if (!choice.llm) fail(2, `${choice.reason}. Nothing was called; nothing is verified.`);
+const { llm, provider, expectedModel } = choice;
 
 const payload = THREE_FINDINGS();
 const parsedPayload = PhrasingPayloadSchema.safeParse(payload);
 if (!parsedPayload.success) fail(1, `the smoke payload itself is invalid: ${parsedPayload.error.message}`);
 
-const llm = createAnthropicLlm({ apiKey, baseURL: process.env.ANTHROPIC_BASE_URL || undefined });
 const ctl = new AbortController();
 const timer = setTimeout(() => ctl.abort(), 30_000);
 const t0 = performance.now();
@@ -41,7 +42,9 @@ const latencyMs = Math.round(performance.now() - t0);
 
 const problems = [];
 const usage = completion.usage ?? { inputTokens: 0, outputTokens: 0 };
-if (completion.model !== PRO_CONFIG.model) problems.push(`WRONG MODEL: asked for "${PRO_CONFIG.model}", API says it ran "${completion.model}"`);
+// Anthropic direct: ids are pinned snapshots, so the echo must match exactly. OpenRouter may echo a dated/variant slug of the requested one.
+const modelOk = provider === "anthropic" ? completion.model === expectedModel : typeof completion.model === "string" && (completion.model === expectedModel || completion.model.startsWith(`${expectedModel}-`) || completion.model.startsWith(`${expectedModel}:`));
+if (!modelOk) problems.push(`WRONG MODEL: asked for "${expectedModel}", API says it ran "${completion.model}"`);
 if (!completion.text || completion.text.trim() === "") problems.push("EMPTY OUTPUT");
 
 let raw;
@@ -68,7 +71,8 @@ if (schemaOk) {
 }
 
 const typical = callCostUsd({ inTokens: usage.inputTokens, outTokens: usage.outputTokens, attempts: 1 });
-console.log("model requested        :", PRO_CONFIG.model);
+console.log("provider              :", provider);
+console.log("model requested        :", expectedModel);
 console.log("model echoed by API    :", completion.model);
 console.log("prompt tokens (real)   :", usage.inputTokens);
 console.log("completion tokens (real):", usage.outputTokens);

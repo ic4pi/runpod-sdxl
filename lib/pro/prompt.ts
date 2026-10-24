@@ -35,4 +35,15 @@ export function outputJsonSchema(): unknown {
   return z.toJSONSchema(LlmOutputSchema, { target: "draft-2020-12" });
 }
 
+/**
+ * The same structure with every value-constraint keyword removed (enum, min/max, pattern, format). Some providers behind OpenRouter reject
+ * strict-mode schemas that carry them, and our own validator enforces all of those anyway. Used for the OpenRouter `response_format`.
+ */
+export function looseOutputJsonSchema(): unknown {
+  const STRIP = new Set(["enum", "minLength", "maxLength", "minItems", "maxItems", "pattern", "format", "minimum", "maximum", "$schema"]);
+  const walk = (n: unknown): unknown =>
+    Array.isArray(n) ? n.map(walk) : n && typeof n === "object" ? Object.fromEntries(Object.entries(n as Record<string, unknown>).filter(([k]) => !STRIP.has(k)).map(([k, v]) => [k, walk(v)])) : n;
+  return walk(outputJsonSchema());
+}
+
 export const PROMPT_META = { version: PRO_CONFIG.promptVersion, model: PRO_CONFIG.model } as const;

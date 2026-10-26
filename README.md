@@ -1,6 +1,6 @@
 # Vocal Repair
 
-Browser-only PWA that repairs and polishes phone-recorded rap vocals. All audio processing runs client-side (Web Audio, RNNoise WASM); nothing is uploaded. An optional Pro tier rewords the coaching text with an LLM (`/api/phrasing`).
+Browser-only PWA that repairs and polishes phone-recorded rap vocals, records directly from the phone mic, and mixes against an imported beat. All audio processing runs client-side (Web Audio, RNNoise WASM); nothing is uploaded. An optional Pro tier rewords the coaching text with an LLM (`/api/phrasing`).
 
 ```
 npm install
@@ -9,6 +9,13 @@ npm run build        # production build (webpack) + precache manifest
 npm test             # unit tests
 npm run e2e          # browser checks (also e2e:coaching, e2e:pwa, e2e:pro); build first
 ```
+
+## Features
+
+- In-app microphone recording with level meter and optional count-in
+- Full repair chain for phone-mic rap vocals
+- Beat / instrumental import + simple mix and stereo WAV export
+- Session persistence, PWA, A/B comparison, coaching
 
 Pro tier environment (Vercel project settings):
 
@@ -20,3 +27,5 @@ Pro tier environment (Vercel project settings):
 | `KV_REST_API_URL` + `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`) | shared rate-limit store (optional; per-instance memory otherwise) |
 
 Design decisions: [DECISIONS.md](DECISIONS.md). What was tested and how: [TESTING.md](TESTING.md).
+
+Real-audio calibration: see `fixtures/calibration/README.md`.

@@ -2,10 +2,12 @@
 
 import { useEffect } from "react";
 import { AbPlayerPanel } from "@/components/chain/AbPlayerPanel";
+import { BeatMixPanel } from "@/components/chain/BeatMixPanel";
 import { CoachingSection } from "@/components/coaching/CoachingSection";
 import { ExportPanel } from "@/components/export/ExportPanel";
 import { PresetPicker } from "@/components/presets/PresetPicker";
 import { PwaStatus } from "@/components/pwa/PwaStatus";
+import { RecorderPanel } from "@/components/chain/RecorderPanel";
 import { SessionBar } from "@/components/session/SessionBar";
 import { ChainPanel } from "@/components/chain/ChainPanel";
 import { SourceLoader } from "@/components/chain/SourceLoader";
@@ -28,6 +30,7 @@ export default function RepairPage() {
       <h1 className="text-lg font-semibold">Repair vocal</h1>
       <PwaStatus />
       <SessionBar />
+      <RecorderPanel />
       <SourceLoader />
       {source && (
         <>
@@ -50,6 +53,7 @@ export default function RepairPage() {
             </pre>
           )}
           <AbPlayerPanel />
+          <BeatMixPanel />
           <ExportPanel />
           <CoachingSection />
           <ChainPanel />

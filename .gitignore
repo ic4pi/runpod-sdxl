@@ -49,6 +49,8 @@ refs/
 *.pt
 
 *.png
+# PWA icons are generated once by `npm run icons` and the manifest needs them in every fresh clone / Vercel build
+!public/icons/*.png
 *.jpg
 *.jpeg
 *.webp

@@ -16,12 +16,11 @@ export const MIX_METRICS = [
 ] as const;
 export type MixMetricId = (typeof MIX_METRICS)[number];
 
-/** One song that defines the user's taste. `measured` is null until the user's own copy has been measured: nothing is invented. */
+/** One reference clip used only to map levels. It carries no song or artist name. `measured` is null until the audio has been measured: nothing is invented. */
 export interface TasteReference {
   id: string;
-  artist: string;
-  /** null = the user picks the track (e.g. "anything by this artist"). */
-  track: string | null;
+  /** Neutral label such as "Reference 1". */
+  label: string;
   /** The user can switch any reference off without deleting it. */
   enabled: boolean;
   measured: Partial<Record<MixMetricId, number>> | null;

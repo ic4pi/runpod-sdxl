@@ -2,8 +2,8 @@ import { validateTemplate } from "./validate";
 import type { Template } from "./types";
 
 /**
- * Taste template: the owner's references, all switched on. `measured: null` means "not measured yet"; every number that
- * is present was measured from the owner's own copy of that song. Nothing comes from memory or estimate.
+ * Taste template: the owner's reference clips, all switched on. `measured: null` means "not measured yet"; every number that
+ * is present was measured from the owner's own copy of that clip. Nothing comes from memory or estimate.
  */
 export const myRap: Template = validateTemplate({
   id: "my-rap",
@@ -14,30 +14,12 @@ export const myRap: Template = validateTemplate({
   preset: "neutral",
   references: [
     // Measured 2026-11-06 from the owner's own 128 kbps / 32 kHz MP3 copies, decoded to 48 kHz and run through lib/dsp/measure
-    // on the whole song. Full songs, so loudness and loudness range cover the whole track.
-    {
-      id: "joyner-lucas-lotto", artist: "Joyner Lucas", track: "Lotto", enabled: true,
-      measured: { integrated_lufs: -8.26, lra_lu: 5.89, true_peak_dbtp: 1.73, crest_active_db: 10.87, boxiness_250hz_rel_db: -18.4, presence_3k5_rel_db: -20.42, sibilance_5k9k_rel_db: -19.41 },
-    },
-    {
-      id: "vinny-paz-design-in-malice", artist: "Vinny Paz", track: "Design in Malice", enabled: true,
-      measured: { integrated_lufs: -9.36, lra_lu: 8.03, true_peak_dbtp: 0.43, crest_active_db: 12.22, boxiness_250hz_rel_db: -14.12, presence_3k5_rel_db: -14.48, sibilance_5k9k_rel_db: -13.63 },
-    },
-    {
-      id: "leather-corduroys-dat-strong", artist: "Leather Corduroys", track: "Dat Strong", enabled: true,
-      measured: { integrated_lufs: -9.41, lra_lu: 2.89, true_peak_dbtp: 0.63, crest_active_db: 12.71, boxiness_250hz_rel_db: -12.01, presence_3k5_rel_db: -15.31, sibilance_5k9k_rel_db: -15.1 },
-    },
-    {
-      id: "doja-cat-4-moment", artist: "Doja Cat", track: "4 Moment", enabled: true,
-      measured: { integrated_lufs: -4.93, lra_lu: 2.89, true_peak_dbtp: 2, crest_active_db: 8.82, boxiness_250hz_rel_db: -17.68, presence_3k5_rel_db: -12.07, sibilance_5k9k_rel_db: -14.03 },
-    },
-    {
-      id: "kendrick-lamar-adhd", artist: "Kendrick Lamar", track: "ADHD", enabled: true,
-      measured: { integrated_lufs: -8.56, lra_lu: 2.31, true_peak_dbtp: -0.15, crest_active_db: 9.91, boxiness_250hz_rel_db: -12.23, presence_3k5_rel_db: -20.55, sibilance_5k9k_rel_db: -20.39 },
-    },
-    // Named earlier, no audio supplied yet: stays on, shows as "awaiting" until measured.
-    { id: "three-6-mafia-stay-fly", artist: "Three 6 Mafia", track: "Stay Fly", enabled: true, measured: null },
-    { id: "pell-the-never", artist: "Pell", track: "The Never", enabled: true, measured: null },
+    // on the whole clip. Labels are neutral on purpose: these clips only map levels.
+    { id: "ref-1", label: "Reference 1", enabled: true, measured: { integrated_lufs: -8.26, lra_lu: 5.89, true_peak_dbtp: 1.73, crest_active_db: 10.87, boxiness_250hz_rel_db: -18.4, presence_3k5_rel_db: -20.42, sibilance_5k9k_rel_db: -19.41 } },
+    { id: "ref-2", label: "Reference 2", enabled: true, measured: { integrated_lufs: -9.36, lra_lu: 8.03, true_peak_dbtp: 0.43, crest_active_db: 12.22, boxiness_250hz_rel_db: -14.12, presence_3k5_rel_db: -14.48, sibilance_5k9k_rel_db: -13.63 } },
+    { id: "ref-3", label: "Reference 3", enabled: true, measured: { integrated_lufs: -9.41, lra_lu: 2.89, true_peak_dbtp: 0.63, crest_active_db: 12.71, boxiness_250hz_rel_db: -12.01, presence_3k5_rel_db: -15.31, sibilance_5k9k_rel_db: -15.1 } },
+    { id: "ref-4", label: "Reference 4", enabled: true, measured: { integrated_lufs: -4.93, lra_lu: 2.89, true_peak_dbtp: 2, crest_active_db: 8.82, boxiness_250hz_rel_db: -17.68, presence_3k5_rel_db: -12.07, sibilance_5k9k_rel_db: -14.03 } },
+    { id: "ref-5", label: "Reference 5", enabled: true, measured: { integrated_lufs: -8.56, lra_lu: 2.31, true_peak_dbtp: -0.15, crest_active_db: 9.91, boxiness_250hz_rel_db: -12.23, presence_3k5_rel_db: -20.55, sibilance_5k9k_rel_db: -20.39 } },
   ],
   steps: [
     {
@@ -85,9 +67,7 @@ export const myRap: Template = validateTemplate({
   unverified: [
     "BandLab menu names and button labels are not confirmed.",
     "Whether the free tier exports a single track is not confirmed.",
-    "Stay Fly (Three 6 Mafia) and The Never (Pell) are not measured yet; the target uses the five songs that are.",
-    "The references are 128 kbps MP3 copies, so true peak can read above 0 dBTP and is not a sign of a bad master.",
-    "The track names Leather Corduroys / Dat Strong and Doja Cat / 4 Moment were typed by hand and not confirmed.",
+    "The reference clips are 128 kbps MP3 copies, so true peak can read above 0 dBTP and is not a sign of a bad master.",
     "The vocal presets are placeholders until calibrated on real recordings.",
   ],
 });

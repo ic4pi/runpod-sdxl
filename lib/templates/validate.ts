@@ -14,11 +14,10 @@ export function validateTemplate(t: unknown): Template {
 
   const refIds = new Set<string>();
   for (const r of t.references as unknown[]) {
-    if (!isObj(r) || typeof r.id !== "string" || typeof r.artist !== "string") throw new Error("template: bad reference");
+    if (!isObj(r) || typeof r.id !== "string" || typeof r.label !== "string") throw new Error("template: bad reference");
     if (refIds.has(r.id)) throw new Error(`template: duplicate reference id ${r.id}`);
     refIds.add(r.id);
     if (typeof r.enabled !== "boolean") throw new Error(`template: reference ${r.id} needs enabled`);
-    if (r.track !== null && typeof r.track !== "string") throw new Error(`template: reference ${r.id} track must be string or null`);
     if (r.measured !== null) {
       if (!isObj(r.measured)) throw new Error(`template: reference ${r.id} measured must be an object or null`);
       for (const [k, v] of Object.entries(r.measured)) {
